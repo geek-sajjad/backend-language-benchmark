@@ -1,0 +1,44 @@
+# Exporters on the app host: node_exporter (:9100) and cAdvisor (:8081).
+#   docker compose -f monitoring/exporters/app.yml up -d
+# Locally only ONE node-exporter can bind :9100; start this file's node-exporter, or
+# loadgen.yml's, not both (see monitoring/README.md).
+name: bench-exporters-app
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: node-exporter
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=:9100
+      # ENA exposes bw_in/bw_out/pps/conntrack/linklocal_allowance_exceeded; validity check
+      - --collector.ethtool
+      - --collector.ethtool.metrics-include=.*allowance.*
+      - --collector.ethtool.device-exclude=^(lo|veth.*|docker.*|br-.*)$$
+      - --collector.netdev.device-exclude=^(lo|veth.*|docker.*|br-.*)$$
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.6
+    container_name: cadvisor
+    network_mode: host
+    privileged: true
+    devices:
+      - /dev/kmsg
+    command:
+      - --port=8081
+      - --housekeeping_interval=1s
+      - --allow_dynamic_housekeeping=false     # keep 1 s even when a container is idle
+      - --docker_only=true
+      - --store_container_labels=false
+      - --enable_metrics=cpu,memory,network,oom_event,process,pressure
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    restart: unless-stopped

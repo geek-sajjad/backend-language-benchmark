@@ -1,0 +1,221 @@
+# 04 · Methodology
+
+All parameters below live in [`config/bench.toml`](../config/bench.toml) and are **frozen (committed and tagged `methodology-v1`) before the first scored run**.
+
+## SLO (pass criteria for one measurement step)
+
+| Check | Threshold | If it fails |
+|---|---|---|
+| p95 latency | < 100 ms | step fails (app) |
+| p99 latency | < 250 ms | step fails (app) |
+| Error rate | < 1% (non-2xx, timeouts, connection errors; expected 422s in test 5 don't count) | step fails (app) |
+| k6 `dropped_iterations` | = 0 | **run invalid**: the load generator couldn't keep up. Exception: if the step already fails p95, p99 or the error rate, dropped iterations only mean k6 ran out of VUs waiting on a slow app, so the step is a normal **fail** |
+| `ethtool` `*_allowance_exceeded` | no increase on app, db, loadgen | **run invalid**: network limit, not app |
+| db host CPU (Postgres + downstream mock) | < 70% average over the step | **run invalid**: DB/downstream headroom violated |
+| loadgen host CPU (k6 + Prometheus + Grafana) | < 70% average over the step | **run invalid**: generator headroom violated |
+
+An invalid run gets the setup fixed and is rerun. It is never recorded as a failure of the stack.
+
+Request timeout in k6 is 5 s. With the p99 threshold at 250 ms, anything that slow already fails the step.
+
+## Finding `max_rps` (one search per stack × test)
+
+Load is **open-model**: k6 `constant-arrival-rate` offers a fixed number of requests per second whether or not the app keeps up, and a saturated app shows rising latency and errors. Closed-loop tools (fixed virtual users) hide overload, which is why they aren't used here.
+
+After a reset, each (stack, test) pair runs through four phases: **smoke → warm-up → stress probe → load steps**, with a **recovery check** after every load step.
+
+```
+0. Reset      restart the stack container (fresh process); write tests (5, 9) also recreate
+              the DB from its template; wait for GET /health == 200
+1. Smoke      10 s at 50 req/s. Every response must be correct.         → not scored
+2. Warm-up    60 s ramping from 50 to 500 req/s (test 8: 100).           → not scored
+3. Probe      doubling 10 s stages until the SLO breaks → estimate E      → not scored
+4. Load steps fixed-rate steps (settle 15 s + measure 30 s) around E,    → SCORED
+              each followed by a recovery check
+5. Result     max_rps = highest passing step below the lowest failing one, confirmed
+```
+
+### 1. Smoke
+
+10 s at a low fixed rate (50 req/s; for test 9 the equivalent in sessions). k6 `check()`s verify the status code and response shape of every response.
+
+- **Any unexpected error** → the pair stops with status `setup_error`. This means a broken deployment (wrong env var, DB not reachable, missing key file), not a slow stack. It is fixed and rerun, never scored.
+- The smoke run's **p50 latency is saved as the baseline** for the recovery check.
+
+This catches a broken setup in 10 seconds instead of after 15 minutes of load steps.
+
+### 2. Warm-up
+
+60 s with the rate ramping from 50 to 500 req/s (test 8: 100). JIT runtimes (JVM, .NET, V8, PHP JIT) compile their hot paths, and pools and caches fill. Every stack gets exactly the same warm-up.
+
+### 3. Stress probe (aiming, not scoring)
+
+A series of short fixed-rate k6 runs that **doubles the rate every 10 s**, starting at 500 req/s where the warm-up ended (test 8: 100): 500 → 1,000 → 2,000 → … up to `probe_max_rate`. Each stage is a 5 s settle followed by a 5 s measure window, judged exactly like a load step's measure window. The probe stops at the **first stage whose window breaks p95, p99 or the error rate**; the rate of the stage before it is the estimate **E**. It takes at most about 1.5 minutes.
+
+Separate stages replace the original design (one ramping run read through k6 `--out json`), because per-sample JSON output can't run at high request rates ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)). The k6 end-of-test summary of each stage is exact and cheap.
+
+E is only used to **aim** the load steps. It isn't scored, because while the rate keeps rising the server never reaches a steady state and latency reacts with a delay, so E is biased. Dropped iterations during the probe are expected and allowed.
+
+After the probe, the recovery check (below) runs. The probe always ends in overload, so this is where a restart is most likely.
+
+### 4. Load steps (scored)
+
+Each **step** is one k6 run at a fixed rate with two scenarios:
+
+- `settle` (15 s): the server adjusts to the new rate (pool growth, GC heap sizing, new downstream connections). Excluded from all checks.
+- `measure` (30 s): tagged `phase:measure`. All SLO and validity checks apply only to this window.
+
+The search:
+
+```
+a. First step at 0.8 × E
+b. Bracket:  pass → next rate ×1.15, until a step fails
+             fail → next rate ×0.75, until a step passes (or the lowest rate fails → slo_fail)
+c. Bisect between the last pass and the first fail,
+   stop when (fail − pass) / pass ≤ 5%
+d. max_rps = highest passing rate below the lowest failing rate
+   (test 9: measured request rate, see 02-test-spec)
+e. Confirm: rerun max_rps once. If it fails, step down one bisection interval
+   and run again (at most 3 times). Recorded as `confirmed: true/false`.
+```
+
+A pass above a rate that already failed is noise and is not used ([09 R5](09-review-findings.md#r5-the-max_rps-search-rewards-noise)). Both rules are in `config/bench.toml` (`confirm_final`).
+
+If E is accurate, this takes about 4–5 steps (bracket gap 15% → 7.5% → 3.75%). If E is off, the bracketing still finds the limit; it just takes a few more steps.
+
+### Recovery check (after every load step and after the probe)
+
+A fixed pause isn't enough after a **failed** step. An overloaded server may still be draining queues or carrying an inflated heap and extra threads. The binary search then tests a lower rate, and the stack would be judged while still recovering. Instead of a fixed pause, the runner waits until **all** of these hold:
+
+| Condition | Why |
+|---|---|
+| App container CPU < 5% (average over the last 5 s) | Queued work is finished |
+| 5 s probe at 20 req/s: p50 ≤ 1.5 × smoke p50 (+1 ms) | The app answers at normal speed again |
+| No active queries from the app in `pg_stat_activity` | DB side is idle |
+| Write tests (5, 9): `CHECKPOINT` issued and finished | Flushing earlier writes to disk doesn't land randomly inside the next measure window |
+
+Wait at least **10 s** and at most **60 s**. If the conditions aren't met after 60 s, the runner **restarts the container and reruns the warm-up**, then continues the search. Each step records `recovery_s` and `recovery_restart: true/false` for transparency.
+
+### Verifying the settle length (pilot)
+
+15 s of settle is a starting value, not a guess we trust blindly. For every passing step the runner compares the **p99 of the last 5 s of settle** with the **p99 of the measure window**. If they differ by more than 20%, the server was still adjusting when measurement started, and the step is flagged `settle_unstable`.
+
+During the pilot ([07-runbook.md](07-runbook.md#6-pilot-not-scored)): if any stack or test shows `settle_unstable`, `settle_s` is raised **for every stack** (for example to 20 or 30 s) before the methodology freeze. In the scored campaign the flag is only reported, never used to change a result.
+
+### Parameters
+
+| Parameter | Value |
+|---|---|
+| Smoke | 10 s at 50 req/s |
+| Warm-up | 60 s, ramp 50 → 500 req/s (test 8: 100) |
+| Probe | start 500 req/s (test 8: 100), ×2 every 10 s, max 400k req/s; abort at error rate > 10% or p99 > 2 s |
+| First load step | 0.8 × E |
+| Bracketing | ×1.15 up after a pass, ×0.75 down after a fail |
+| Lowest step | 100 req/s. If that fails, `status = slo_fail` |
+| Bisection resolution | 5% (same as the tie threshold) |
+| Max load steps | 15 |
+| Settle / measure | 15 s / 30 s |
+| Recovery | min 10 s, max 60 s, then restart + warm-up |
+
+**Status values:**
+- `ok`
+- `setup_error`: the smoke test failed. This is a deployment bug: fix it and rerun. Never scored.
+- `slo_fail`: failed even at the lowest step
+- `crash`: the container exited
+- `oom`: the container exited with `OOMKilled=true` (`docker inspect`)
+A crash or OOM at a higher step still records the last passing rate as `max_rps` with status `ok`, and the event is noted in the step log. Only a stack that can't pass any step is scored as failed. This matches "highest rate at which all thresholds pass".
+
+## Test 9 extras: common-load latency and memory
+
+1. Run the test 9 search for **all** stacks first.
+2. `L_common = 0.8 × min(max_rps of stacks that passed test 9)`. Test 9 offers load as sessions/s, so the runner divides by 4.65 requests per session ([02](02-test-spec.md#9--mixed-workload-user-sessions-authenticated)).
+3. For each stack: restart, reset the DB, smoke, warm up, then run **120 s at `L_common`**. Record:
+   - `p99_common_ms`: k6 p99 over the 120 s
+   - `peak_rss_mb`: the peak of **`anon + shmem`** from the app container's cgroup `memory.stat`, sampled every 1 s on the app host ([09 R2](09-review-findings.md#r2-the-memory-metric-probably-misses-shared-memory)). cgroup accounting counts each page once, so this covers 8 Node workers, 8 Uvicorn workers or all FPM children plus Nginx without double counting shared pages, and it includes shared memory such as PHP's OPcache segment. cAdvisor's `container_memory_rss` is the cgroup's `anon` only (verified: no shmem series on cgroup v2); it is recorded next to it as a cross-check. A stack must run as one container (`app`).
+
+> **Decision note:** the scoring guide says "peak RSS under load during test 9". Measuring RSS at the **common load** compares every stack doing the same amount of work. Measuring it at each stack's own max rate would penalize fast stacks for carrying more traffic. The peak RSS during the max-rate search is also recorded as `peak_rss_search_mb` for transparency. See [open decisions](08-roadmap.md#open-decisions).
+
+## Fairness rules
+
+- Exactly one stack runs on the app host at a time. Nothing else runs there apart from `node_exporter` and `cAdvisor`, which are identical for every stack.
+- Same AMI, kernel, sysctls, Docker version and instance type for every stack. Every stack runs inside one Terraform-provisioned environment in one campaign, so no stack gets a different physical host from a re-provision mid-campaign. If a re-provision is forced, **all** stacks are rerun.
+- Stack run order is randomized per test (the seed is recorded in the manifest) so time-of-day or neighbor effects don't consistently favor one stack.
+- Identical smoke, warm-up, probe, step duration, recovery rules and payload sets.
+- The conformance suite passes for every stack at the exact commit that gets benchmarked.
+
+## Proving Postgres is not the bottleneck
+
+Before the campaign, the runner's `calibrate` command measures the **DB ceiling** for tests 2–5. It runs the exact SQL each test produces through `pgbench` custom scripts with prepared statements, at 64 clients, from the loadgen host. That gives the maximum the database itself can serve over this network.
+
+| Requirement | Action if violated |
+|---|---|
+| DB ceiling ≥ 1.5 × the best stack's `max_rps` in that test | Upsize db host (`c7a.8xlarge`) and rerun calibration |
+| db CPU < 70% during every measured step | Step is invalid; upsize |
+| No lock waits above 1% of time (`pg_stat_activity`), WAL fsync not saturated | Investigate; raise gp3 IOPS/throughput above the free baseline only if WAL fsync is the limit |
+
+If several stacks still converge near the ceiling, the guide's "DB-bound" note goes into the video.
+
+## Proving the load generator is not the bottleneck
+
+- `calibrate` also runs test 1 against a trivial C/Rust echo server on the app host to measure **k6's own max rate** on the chosen loadgen size, with Prometheus, Grafana and remote-write running exactly as in the campaign.
+- If any stack's test needs more than 70% of that ceiling, first resize the loadgen to `c7a.8xlarge` and recalibrate. Only if that isn't enough, go to a bigger single loadgen (`c7a.16xlarge`). Splitting across several loadgen hosts is **not implemented**: one host keeps the end-of-test summary exact ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)).
+- `dropped_iterations = 0` and loadgen CPU < 70% are validity checks on every step.
+
+## Known limitations (stated in the video)
+
+- **One run per test.** Differences under 5% are reported as ties.
+- One hardware shape: results may change on ARM (Graviton) or with more or fewer cores.
+- One stack per language. A different framework would give that language a different score.
+- Cloud noise: dedicated physical cores reduce it but don't eliminate it.
+
+---
+
+## Appendix A: candidate reported-only metrics (undecided)
+
+> **Status: not decided.** None of these are in `config/bench.toml`, the runner or the scores yet. Each needs a yes/no before the methodology freeze (`methodology-v1`). See [D8 in the roadmap](08-roadmap.md#open-decisions). They would be **shown in the video and published in the results, but never fed into `score.py`**, so they can't change the ranking.
+
+### A.1 Startup time and idle memory
+
+| | |
+|---|---|
+| What | Time from `docker compose up` (container start) to the first `GET /health` = 200, and RSS after 30 s idle with no traffic |
+| Why | Matters for autoscaling, rolling deploys, containers and serverless. JVM/.NET vs Go/Rust differ a lot. |
+| How | The runner already restarts the stack before every test, so it can record both on every restart and report the **median of the 9 restarts** per stack. Idle RSS comes from cAdvisor, same as `peak_rss_mb`. |
+| Cost | Close to zero (about 30 s idle wait per restart → ~30 min per campaign) |
+| Open questions | Do the startup-built sales dataset (test 8) and JIT warm-up count? (Proposed: yes, time to ready is what a deploy waits for.) Report image size too? |
+
+### A.2 Overload and recovery
+
+| | |
+|---|---|
+| What | How a stack behaves when traffic exceeds its capacity, and how fast it gets back to normal |
+| How | After the test 9 common-load run: 60 s at `0.8 × own max_rps` → **30 s at `1.5 × own max_rps`** → 60 s back at `0.8 × own max_rps`. Record the error rate and p99 during the spike, and the **recovery time** (seconds after the spike until p99 is back under the SLO for 10 s in a row). Crash or OOM during the spike is reported. |
+| Why | Some runtimes queue and recover; some collapse, time out or get OOM-killed. That can matter more than max throughput. |
+| Cost | ~3 min per stack (~25 min per campaign) |
+| Open questions | Spike size 1.5× or 2×? Relative to own max (fair stress per stack) or to a common rate (same absolute load)? The proposal is own max. |
+| Note | `dropped_iterations` will be > 0 during the spike by design. It is not a validity failure for this metric, but loadgen CPU < 70% still applies. |
+
+### A.3 Soak test
+
+| | |
+|---|---|
+| What | Stability over time: memory growth, GC pauses and latency drift |
+| How | Test 9 workload at **`0.7 × own max_rps` for 15 min**. Record RSS and p99 as time series (per minute). Report **RSS growth** (last minute vs minute 2) and **p99 drift** (worst minute vs median minute). |
+| Why | A 30 s measurement window can't show leaks, slow heap growth or periodic full-GC pauses |
+| Cost | ~17 min per stack (~2 h per campaign) |
+| Open questions | Is 15 min long enough (30 min doubles the cost)? Use own-max or `L_common`? (Own max shows behaviour near real capacity; `L_common` gives equal work.) Should a crash or OOM here be flagged in the main results table? |
+
+### A.4 Core scaling efficiency
+
+| | |
+|---|---|
+| What | How well each runtime turns extra CPU cores into extra throughput: **threads in one process** (Go, Java, .NET, Rust) vs **one process per core** (Node cluster, Uvicorn workers, PHP-FPM) |
+| How | Run the normal test 8 search (in-memory aggregation, pure CPU) a second time with the app limited to **1 core**: Docker `cpuset: "0"`, and `WORKERS=1` for multi-process stacks. Everything else stays identical. Then:<br>`scaling = max_rps(8 cores) ÷ (8 × max_rps(1 core))`<br>100% = perfect use of all 8 cores. Less means cores are lost to GC threads, lock contention, scheduler or process overhead. |
+| Why | The scored tests let every stack use all 8 cores, so they show *how fast* each one is on 8 cores, but not *how well it scales*. This metric makes the threads-vs-processes difference visible on its own. |
+| Notes | Thread-based runtimes detect the 1-core limit by themselves (Go `GOMAXPROCS`, JVM, .NET and Tokio all read the cpuset). PHP-FPM keeps the same `pm.max_children`, so its processes just share the one core. DB pool size per process stays the same. Test 8 uses no DB, so pool sizing doesn't matter here. |
+| Cost | One extra search per stack, ~13 min each (~1.5 h per campaign) |
+| Open questions | Test 8 only, or also test 1 (framework overhead) and test 7 (JSON)? Add a 4-core point to draw a scaling curve (1 → 4 → 8)? |
+
+### Time and cost if all four are adopted
+
+About **+4.5 h** of campaign time (~$10 at the current hourly estimate), mostly the soak tests and the core-scaling searches. They would run as a separate runner phase (`bench.py extras`) after the scored campaign, so dropping any of them later doesn't touch the scored results.

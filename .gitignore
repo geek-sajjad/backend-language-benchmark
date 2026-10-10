@@ -1,0 +1,22 @@
+# results: summaries are committed, raw streams are not
+results/**/raw/
+# terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/*.tfvars
+# build outputs
+node_modules/
+target/
+bin/
+obj/
+vendor/
+__pycache__/
+*.pyc
+.venv/
+.env
+.idea/
+.vscode/
+
+# test-only JWT keys (k6/data/jwt/gen-keys.sh)
+k6/data/jwt/*.pem
+k6/data/jwt/tokens.json

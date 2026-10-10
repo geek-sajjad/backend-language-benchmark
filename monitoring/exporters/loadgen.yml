@@ -1,0 +1,22 @@
+# Exporter on the loadgen host: node_exporter (:9100). Prometheus + Grafana are in
+# monitoring/compose.yml.
+#   docker compose -f monitoring/exporters/loadgen.yml up -d
+name: bench-exporters-loadgen
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: node-exporter
+    network_mode: host
+    pid: host
+    # Same cores as Prometheus/Grafana so it stays off k6's cores (0-13).
+    cpuset: "${MONITORING_CPUSET:-14-15}"
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=:9100
+      - --collector.ethtool
+      - --collector.ethtool.metrics-include=.*allowance.*
+      - --collector.ethtool.device-exclude=^(lo|veth.*|docker.*|br-.*)$$
+      - --collector.netdev.device-exclude=^(lo|veth.*|docker.*|br-.*)$$
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped

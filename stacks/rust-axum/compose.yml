@@ -1,0 +1,25 @@
+# Rust: Axum + Tokio + SQLx. Defaults target a local run (db/ and downstream/ on this machine);
+# the runner overrides DB_HOST and DOWNSTREAM_URL with the db host's private IP.
+#   docker compose -f stacks/rust-axum/compose.yml up -d --build
+name: bench-app
+services:
+  app:
+    build: .
+    image: bench-rust-axum:local
+    container_name: app
+    network_mode: host
+    mem_limit: 30g
+    environment:
+      DB_HOST: ${DB_HOST:-127.0.0.1}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-bench}
+      DB_USER: ${DB_USER:-bench}
+      DB_PASSWORD: ${DB_PASSWORD:-bench}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-64}
+      DOWNSTREAM_URL: ${DOWNSTREAM_URL:-http://127.0.0.1:9000}
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public.pem
+      WORKERS: ${WORKERS:-}            # empty = Tokio default (one worker per core)
+    volumes:
+      - ../../k6/data/jwt/public.pem:/run/secrets/jwt_public.pem:ro
+    ulimits:
+      nofile: 1048576

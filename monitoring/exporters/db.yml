@@ -1,0 +1,38 @@
+# Exporters on the db host: node_exporter (:9100) and postgres_exporter (:9187).
+#   docker compose -f monitoring/exporters/db.yml up -d
+# Locally only ONE node-exporter can bind :9100: `... up -d postgres-exporter` if another
+# exporters file already runs one (see monitoring/README.md).
+name: bench-exporters-db
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: node-exporter
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=:9100
+      - --collector.ethtool
+      - --collector.ethtool.metrics-include=.*allowance.*
+      - --collector.ethtool.device-exclude=^(lo|veth.*|docker.*|br-.*)$$
+      - --collector.netdev.device-exclude=^(lo|veth.*|docker.*|br-.*)$$
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    container_name: postgres-exporter
+    network_mode: host
+    environment:
+      # Connects to the `postgres` maintenance DB, not `bench`: pg_stat_database is
+      # cluster-wide anyway, and this way db/reset.sql (DROP DATABASE bench WITH (FORCE))
+      # never kills the exporter's session. application_name lets the runner exclude it
+      # from the "no active queries" recovery check.
+      DATA_SOURCE_NAME: "postgresql://bench:bench@127.0.0.1:5432/postgres?sslmode=disable&application_name=postgres_exporter"
+    command:
+      - --web.listen-address=:9187
+      - --collector.locks
+      - --collector.database
+      - --collector.stat_database
+    restart: unless-stopped

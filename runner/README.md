@@ -1,0 +1,69 @@
+# runner
+
+`bench.py` runs a campaign without anyone at the keyboard ([docs/06-runner-and-results.md](../docs/06-runner-and-results.md)). It runs on the loadgen host and reaches app and db over SSH. Python 3.11+ standard library only, plus k6 on `PATH`.
+
+```bash
+python3 runner/bench.py check                         # hosts, versions, sysctls, data files, Prometheus targets
+python3 runner/bench.py conformance --stacks all      # conformance/check.py against each stack
+python3 runner/bench.py calibrate                     # → results/calibration.json
+python3 runner/bench.py run --stacks all --dry-run    # plan + estimated duration
+python3 runner/bench.py run --stacks all              # → results/<campaign-id>/
+python3 runner/bench.py resume <campaign-id>          # after an INVALID stop or a crash
+python3 runner/bench.py common-load <campaign-id>     # rerun only the test 9 common-load phase
+python3 runner/bench.py csv <campaign-id>             # rebuild results.csv + scores.txt
+```
+
+`--config` picks another `bench.toml` (only for development; a scored campaign uses the frozen one) and `--hosts` another hosts file. "all" means every configured stack that has a `stacks/<name>/compose.yml`; the others are skipped with a note.
+
+## Hosts and local mode
+
+`runner/hosts.toml` is written by `infra/host-setup/deploy.sh`:
+
+```toml
+mode = "aws"
+ssh_user = "ubuntu"
+repo_dir = "/home/ubuntu/bench"
+prometheus_url = "http://127.0.0.1:9090"
+net_iface = "ens5"
+[hosts.app]
+private_ip = "10.42.0.10"
+[hosts.db]
+private_ip = "10.42.0.11"
+[hosts.loadgen]
+private_ip = "10.42.0.12"
+```
+
+Without that file the runner is in **local mode**: every role is this machine, commands run locally, k6 isn't pinned to cores, and the ethtool and host-CPU validity checks are skipped (they're meaningless when k6, the app and Postgres share one machine). Prometheus is optional locally; without it the recovery check reads CPU from `docker stats`. Local numbers are never published.
+
+## What a pair does
+
+Each (stack, test) pair: reset (restart the container; tests 5 and 9 also recreate the DB) → smoke (body checks; any failure = `setup_error`) → warm-up → probe → load steps with a recovery check after each → confirmation → `result.json`.
+
+| Piece | Behaviour |
+|---|---|
+| Probe | Doubling stages from `probe.start_rate`, each a short fixed-rate run: `stage_s − window_s` settle, then a `window_s` measure. E = the last stage that met the SLO. |
+| Steps | First at 0.8 × E; ×1.15 after a pass, ×0.75 after a fail; then bisect to `bisect_resolution`. At most `max_steps`. |
+| `max_rps` | Highest passing rate **below the lowest failing rate** (09 R5). Test 9: that step's measured request rate. |
+| Confirmation | `confirm_final = true`: the final rate is rerun; if it fails, the runner steps down one bisection interval, up to 3 times (09 R5). |
+| Verdict | `pass` / `fail` from p95, p99 and error rate of the measure window. **INVALID** (campaign stops, fix, `resume`): dropped iterations at an otherwise passing step, an ethtool allowance counter increase, db or loadgen CPU ≥ 70%, or a missing Prometheus metric on AWS. Dropped iterations at a step that already fails the SLO only mean k6 ran out of VUs waiting on a slow app, so the step is a `fail`. |
+| Crash / OOM | The step fails and the event is logged. The recovery check restarts the container and warms up again. Only a pair with no passing step gets status `crash` / `oom`. |
+| Recovery | After min 10 s: app CPU < 5% of its cores, no active app queries, a 5 s probe at 20 req/s with p50 ≤ 1.5 × smoke p50 + 1 ms, then `CHECKPOINT` for write tests. Not recovered after 60 s → restart + warm-up. |
+| `settle_unstable` | Passing step whose settle-tail p99 differs from the measure p99 by more than 20%. Reported only. |
+| Common load | After all test 9 searches: L_common = 0.8 × the lowest passing test 9 `max_rps`; per stack: reset, smoke, warm-up, `common_load.duration_s` at L_common. `p99_common_ms` from k6; peak memory from the metric in `[memory]`. |
+| Memory | `cgroup_anon_shmem` (default): anon + shmem from the app cgroup's `memory.stat`, sampled every 1 s on the app host (09 R2). cAdvisor RSS is recorded next to it. |
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `bench.py` | CLI |
+| `benchlib/config.py` | `bench.toml` access, test scripts |
+| `benchlib/cluster.py` | Hosts (local or SSH), the stack container, the database, ethtool |
+| `benchlib/k6.py` | Runs k6, parses the summary (`http_reqs{phase:measure}.count ÷ measure_s`, never the submetric's `rate`) |
+| `benchlib/prom.py` | Prometheus window queries (expressions in `monitoring/README.md`) |
+| `benchlib/search.py` | The per-pair search, verdicts, recovery |
+| `benchlib/campaign.py` | Manifest, test-major randomized order, resume, common load, `results.csv` |
+| `benchlib/calibrate.py` | pgbench ceilings for tests 2–5, k6 ceiling (echo server), downstream-mock ceiling |
+| `pgbench/test{2..5}.sql` | The SQL each test produces, for the DB ceiling |
+
+All result files are written atomically (temp file + rename). The runner never deletes a campaign folder; a rerun pair adds a new attempt (`search.a2.json`, `steps/a2-…`).

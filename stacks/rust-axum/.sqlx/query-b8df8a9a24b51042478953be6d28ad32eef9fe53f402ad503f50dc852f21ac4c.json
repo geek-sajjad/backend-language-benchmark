@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO order_items (order_id, product_id, quantity, unit_price_cents)\n         SELECT $1, * FROM UNNEST($2::int4[], $3::int4[], $4::int4[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4Array",
+        "Int4Array",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b8df8a9a24b51042478953be6d28ad32eef9fe53f402ad503f50dc852f21ac4c"
+}

@@ -1,0 +1,113 @@
+# Benchmark configuration: single source of truth for the runner.
+# FREEZE: once tagged `methodology-v1`, changing anything here means rerunning every stack.
+
+[slo]
+p95_ms = 100
+p99_ms = 250
+error_rate = 0.01          # 1%
+request_timeout_s = 5
+
+[validity]                 # violations make a step INVALID (rerun), not a stack failure
+max_dropped_iterations = 0
+max_db_cpu = 0.70          # db host: Postgres + downstream mock
+max_loadgen_cpu = 0.70     # loadgen host: k6 + Prometheus + Grafana
+check_ethtool_allowances = true
+
+[search]                   # see docs/04-methodology.md "Finding max_rps"
+lowest_rate = 100
+bisect_resolution = 0.05   # matches the 5% tie threshold; finer resolution can't change a ranking
+max_steps = 15
+settle_s = 15              # verified in the pilot; raise for ALL stacks if any step is settle_unstable
+measure_s = 30
+settle_unstable_threshold = 0.20
+# 09 R5: max_rps = highest pass below the lowest failing rate (always applied), and the final
+# rate is rerun once; if that fails, step down one bisection interval (up to 3 tries).
+confirm_final = true
+
+[search.smoke]
+rate = 50
+duration_s = 10
+
+[search.warmup]
+duration_s = 60
+from_rate = 50
+to_rate = 500
+
+[search.warmup.to_rate_override]
+"8" = 100
+
+[search.probe]
+start_rate = 500            # = warm-up end rate; test 8 starts at 100
+factor = 2.0
+stage_s = 10
+max_rate = 400000
+abort_error_rate = 0.10
+abort_p99_ms = 2000
+window_s = 5
+
+[search.probe.start_rate_override]
+"8" = 100
+
+[search.bracket]
+first_step = 0.8           # × probe estimate E
+up = 1.15
+down = 0.75
+
+[search.recovery]
+min_s = 10
+max_s = 60                 # not recovered by then → restart container + warm-up
+app_cpu_below = 0.05
+probe_rate = 20
+probe_s = 5
+probe_p50_factor = 1.5     # vs smoke p50 (+1 ms)
+checkpoint_tests = [5, 9]
+
+[memory]                   # 09 R2: peak memory for the memory score
+# cgroup_anon_shmem: anon + shmem from the app cgroup's memory.stat, sampled every 1 s
+#                    (counts shared memory such as PHP OPcache once; no double counting)
+# cadvisor_rss:      max_over_time(container_memory_rss{name="app"}) (misses shmem)
+metric = "cgroup_anon_shmem"
+
+[common_load]
+factor = 0.8
+duration_s = 120
+
+[mixed_sessions]           # test 9: journey weights (percent); each iteration = one session, all requests carry a JWT
+browser = 40               # 3 → 2,2,2 → 6                 (5 requests)
+buyer = 25                 # 3 → 2,2 → 6 → 5 → 4           (6 requests)
+returning = 20             # 4 → 2,2 → 3                   (4 requests)
+cart_sync = 10             # 7,7                           (2 requests)
+analyst = 5                # 8,8,8                         (3 requests)
+avg_requests_per_session = 4.65
+think_time_s = 0
+
+[auth]                     # test 9 only
+algorithm = "RS256"
+issuer = "bench-idp"
+audience = "bench-api"
+token_count = 10000        # sub = customer ids 1..10000; one token per session
+
+[scoring]
+failure_score = 1.0
+weights = { mixed = 0.35, composite = 0.35, latency = 0.15, memory = 0.15 }
+tie_threshold = 0.05
+
+[downstream]
+delay_ms = 50
+
+[reset]
+recreate_db_tests = [5, 9]  # only write tests change the DB; read tests keep the prewarmed DB
+
+[loadgen]
+count = 1                  # prefer resizing the one loadgen (c7a.8xlarge) over raising this
+k6_cpuset = "0-13"         # Prometheus + Grafana pinned to 14-15 on the same host
+
+[stacks]
+# name = language ; folder is stacks/<name>
+node-nestjs       = "node"
+rust-axum         = "rust"
+go-gin            = "go"
+python-fastapi    = "python"
+java-spring       = "java"
+dotnet-aspnetcore = "dotnet"
+php-laravel       = "php"

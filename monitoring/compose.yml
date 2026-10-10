@@ -1,0 +1,81 @@
+# Prometheus + Grafana for the loadgen host. Both pinned to the cores k6 does not use
+# (config/bench.toml [loadgen] k6_cpuset = "0-13"). Locally, override the cpuset with
+# cores that exist, e.g. MONITORING_CPUSET=6-7.
+#   docker compose -f monitoring/compose.yml up -d
+#   GRAFANA_ADMIN_PASSWORD=... GRAFANA_PUBLIC_VIEW=true docker compose -f monitoring/compose.yml up -d   # AWS
+# Prometheus is NOT meant to be public: on AWS the security group only opens 3000.
+name: bench-monitoring
+services:
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    container_name: prometheus
+    network_mode: host
+    cpuset: "${MONITORING_CPUSET:-14-15}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.listen-address=:9090
+      - --web.enable-remote-write-receiver
+      - --web.enable-lifecycle          # POST /-/reload after editing prometheus.yml
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/targets:/etc/prometheus/targets:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    container_name: grafana
+    network_mode: host
+    cpuset: "${MONITORING_CPUSET:-14-15}"
+    # No data volume on purpose: datasource and dashboards are provisioned from this repo,
+    # and the admin password from the environment is applied on every start.
+    environment:
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}   # AWS: always set (terraform output)
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_PUBLIC_VIEW:-true}
+      GF_AUTH_ANONYMOUS_ORG_NAME: Benchmark                           # created by grafana-init
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_ANONYMOUS_HIDE_VERSION: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_USERS_VIEWERS_CAN_EDIT: "false"        # also keeps Explore away from viewers
+      GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 5s
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/run-overview.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_PLUGINS_PUBLIC_KEY_RETRIEVAL_DISABLED: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    restart: unless-stopped
+
+  # Grafana has no setting to rename the default org, and anonymous access needs the org
+  # named in GF_AUTH_ANONYMOUS_ORG_NAME to exist. This one-shot renames org 1 to
+  # "Benchmark" (where the datasource and dashboards are provisioned), then exits.
+  grafana-init:
+    image: grafana/grafana:13.2.3
+    container_name: grafana-init
+    network_mode: host
+    cpuset: "${MONITORING_CPUSET:-14-15}"
+    depends_on:
+      grafana:
+        condition: service_healthy
+    environment:
+      GRAFANA_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    entrypoint: ["sh", "/init-org.sh"]
+    volumes:
+      - ./grafana/init-org.sh:/init-org.sh:ro
+    restart: "no"
+
+volumes:
+  prometheus-data:

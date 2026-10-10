@@ -1,0 +1,15 @@
+# Downstream mock for test 6. Runs on the db host (never on the app host).
+#   docker compose -f downstream/compose.yml up -d --build
+name: bench-downstream
+services:
+  downstream:
+    build: .
+    image: bench-downstream:local
+    container_name: downstream
+    network_mode: host
+    environment:
+      LISTEN_ADDR: ":9000"
+      DELAY_MS: "50"          # config/bench.toml [downstream] delay_ms
+    ulimits:
+      nofile: 1048576
+    restart: unless-stopped
