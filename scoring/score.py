@@ -7,10 +7,9 @@ a campaign folder's own bench.toml copy is used when it sits next to results.csv
 """
 import csv, math, pathlib, sys, tomllib
 
-COMPOSITE_TESTS = [1, 2, 3, 4, 5, 6, 7, 8]
+COMPOSITE_TESTS = [2, 3, 4, 5, 6, 7, 8]   # test 1 (JSON hello) removed; numbers kept
 MIXED_TEST = 9
-CATEGORIES = {"raw_speed": [1, 7, 8], "database": [2, 3, 4, 5],
-              "concurrency": [6], "cpu": [7, 8]}
+CATEGORIES = {"database": [2, 3, 4, 5], "concurrency": [6], "cpu": [7, 8]}
 OVERALL_WEIGHTS = {}     # [scoring] weights
 FAILURE_SCORE = None     # [scoring] failure_score: a failed test (OOM, crash, SLO never met)
 TIE_THRESHOLD = None     # [scoring] tie_threshold: relative gap below which two results are a tie
@@ -50,6 +49,7 @@ def main(path, config_path=None):
     results = {}            # (stack, test) -> max_rps, or None if failed
     p99, rss = {}, {}       # stack -> test 9 value, or None if failed
     language = {}
+    db_bound = set()        # (stack, test) whose max_rps was limited by Postgres: reported, scored as measured
     for r in csv.DictReader(open(path)):
         stack, test = r["stack"], int(r["test"])
         language[stack] = r["language"]
@@ -57,6 +57,8 @@ def main(path, config_path=None):
             print(f"WARNING duplicate row: {stack} test {test} (expected one run)")
         ok = r["status"] == "ok"
         results[(stack, test)] = float(r["max_rps"]) if ok else None
+        if ok and r.get("db_bound") == "1":
+            db_bound.add((stack, test))
         if test == MIXED_TEST:
             p99[stack] = float(r["p99_common_ms"]) if ok else None
             rss[stack] = float(r["peak_rss_mb"]) if ok else None
@@ -90,6 +92,10 @@ def main(path, config_path=None):
         print(f"{s:<16}{language[s]:<10}{overall:8.1f}{comp:8.1f}{mixed:8.1f}"
               f"{lat:8.1f}{mem:8.1f}" + "".join(f"{cats[c]:9.1f}" for c in CATEGORIES)
               + "  " + (", ".join(map(str, failed)) or "-"))
+
+    if db_bound:
+        print("DB-limited (Postgres stopped these at max_rps): "
+              + ", ".join(f"{s} test {t}" for s, t in sorted(db_bound)))
 
     ranked = sorted(rows, reverse=True)
     ties = [f"{a[1]} ~ {b[1]}" for a, b in zip(ranked, ranked[1:]) if (a[0] - b[0]) / a[0] < TIE_THRESHOLD]

@@ -72,7 +72,7 @@ pub async fn category_products(
     let products = sqlx::query_as!(
         Product,
         "SELECT id, sku, name, description, price_cents, stock, category_id, created_at
-         FROM products WHERE category_id = $1 AND id > $2 ORDER BY id LIMIT 100",
+         FROM products WHERE category_id = $1 AND id > $2 ORDER BY id LIMIT 50",
         category_id,
         page.after
     )

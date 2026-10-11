@@ -1,14 +1,14 @@
 # k6
 
-Load scripts for the nine tests ([docs/02-test-spec.md](../docs/02-test-spec.md)). The runner (`runner/bench.py`) drives them; they also run on their own for development.
+Load scripts for the eight tests (numbered 2–9; test 1 was removed) ([docs/02-test-spec.md](../docs/02-test-spec.md)). The runner (`runner/bench.py`) drives them; they also run on their own for development.
 
 | Path | Purpose |
 |---|---|
-| `tests/01-json.js` … `tests/09-mixed.js` | One script per test |
+| `tests/02-single-read.js` … `tests/09-mixed.js` | One script per test |
 | `tests/00-echo.js` | Calibration only: k6 and downstream-mock ceilings |
 | `lib/options.js` | Shared load shape: scenario, VU sizing, thresholds, tags, phase tagging |
 | `lib/env.js` | Every parameter, read from `-e` (the runner is the only reader of `config/bench.toml`) |
-| `lib/http.js` | Requests with fixed `name` tags, status checks, body checks in smoke runs |
+| `lib/http.js` | Requests with fixed `name` tags and reused params objects; status and body checks in smoke runs only (load runs rely on `http_req_failed`) |
 | `lib/rng.js` | Seeded per-VU PRNG |
 | `lib/summary.js` | `handleSummary()`: full summary JSON to `SUMMARY_FILE` plus one line on stdout |
 | `lib/payloads.js` | Test 7 bodies via `SharedArray` |

@@ -91,7 +91,7 @@ ATTRIBUTES = {
 }
 
 
-def generate_transform_payloads(count: int = 200, items: int = 45):
+def generate_transform_payloads(count: int = 200, items: int = 15):
     """Deterministic POST /transform request bodies (k6/data/transform/)."""
     rng = SplitMix64(TRANSFORM_SEED)
     pick = lambda xs: xs[rng.below(len(xs))]

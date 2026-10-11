@@ -9,12 +9,11 @@ mod transform;
 use std::{env, sync::Arc, time::Duration};
 
 use axum::{
-    Json, Router,
+    Router,
     middleware::from_fn_with_state,
     routing::{get, post},
     serve::ListenerExt,
 };
-use serde::Serialize;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
 #[derive(Clone)]
@@ -57,7 +56,6 @@ async fn run() {
         .route_layer(from_fn_with_state(state.clone(), auth::require_auth));
 
     let app = Router::new()
-        .route("/json", get(hello))
         .route("/health", get(|| async { "ok" }))
         .merge(
             api_routes()
@@ -89,14 +87,6 @@ fn api_routes() -> Router<AppState> {
         .route("/aggregate", get(aggregate::aggregate))
 }
 
-#[derive(Serialize)]
-struct Message {
-    message: &'static str,
-}
-
-async fn hello() -> Json<Message> {
-    Json(Message { message: "Hello, World!" })
-}
 
 async fn connect_db() -> PgPool {
     let url = format!(

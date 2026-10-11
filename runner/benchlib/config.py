@@ -3,8 +3,8 @@ import tomllib
 
 from .util import REPO
 
+# Test 1 (JSON hello) was removed on 2026-10-11; the other tests keep their numbers.
 TEST_SCRIPTS = {
-    1: "01-json.js",
     2: "02-single-read.js",
     3: "03-large-result.js",
     4: "04-list-join.js",
