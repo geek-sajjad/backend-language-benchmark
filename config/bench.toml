@@ -10,6 +10,7 @@ request_timeout_s = 5
 [validity]                 # violations make a step INVALID (rerun), not a stack failure
 max_dropped_iterations = 0
 max_db_cpu = 0.70          # db host: Postgres + downstream mock
+db_bound_tests = [2, 3, 4, 5, 9]  # here db CPU >= max_db_cpu flags the step `db_bound` instead of INVALID (04)
 max_loadgen_cpu = 0.70     # loadgen host: k6 + Prometheus + Grafana
 check_ethtool_allowances = true
 
@@ -99,7 +100,7 @@ delay_ms = 50
 recreate_db_tests = [5, 9]  # only write tests change the DB; read tests keep the prewarmed DB
 
 [loadgen]
-count = 1                  # prefer resizing the one loadgen (c7a.8xlarge) over raising this
+count = 1                  # prefer resizing the one loadgen (c7g.8xlarge) over raising this
 k6_cpuset = "0-13"         # Prometheus + Grafana pinned to 14-15 on the same host
 
 [stacks]

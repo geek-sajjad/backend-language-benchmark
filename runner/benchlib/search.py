@@ -110,7 +110,8 @@ class Pair:
         state = self.stack.state() or {}
 
         verdict, reasons = self.judge(n, metrics, eth_before, eth_after, state)
-        record = {"rate": rate, "verdict": verdict, "reasons": reasons, "started": start, **n,
+        record = {"rate": rate, "verdict": verdict, "reasons": reasons, "db_bound": "db_bound" in reasons,
+                  "started": start, **n,
                   "metrics": metrics, "ethtool": {"before": eth_before, "after": eth_after},
                   "container": {k: state.get(k) for k in ("Running", "OOMKilled", "ExitCode", "Status")}}
         if verdict == "pass" and n["settle_tail_p99_ms"] and n["p99_ms"]:
@@ -143,8 +144,14 @@ class Pair:
             for key, limit in (("db_cpu", self.validity["max_db_cpu"]), ("loadgen_cpu", self.validity["max_loadgen_cpu"])):
                 if metrics.get(key) is None:
                     raise InvalidStep(f"{key} missing from Prometheus")
-                if metrics[key] >= limit:
-                    raise InvalidStep(f"{key} {metrics[key]:.0%} >= {limit:.0%}")
+                if metrics[key] < limit:
+                    continue
+                # In the DB tests Postgres may be the bottleneck: the step stays valid and is
+                # flagged, so the result can be reported as DB-limited (04 "When Postgres is the bottleneck").
+                if key == "db_cpu" and self.test in self.validity.get("db_bound_tests", []):
+                    reasons.append("db_bound")
+                    continue
+                raise InvalidStep(f"{key} {metrics[key]:.0%} >= {limit:.0%}")
         return ("pass" if slo_ok else "fail"), reasons
 
     # ------------------------------------------------------------------ recovery
@@ -227,13 +234,14 @@ class Pair:
         rss = [st["metrics"]["app_rss_mb"] for st in steps if st["metrics"].get("app_rss_mb") is not None]
         result["peak_rss_search_mb"] = max(rss) if rss else None
         if best:
-            # Test 9: the measured request rate; tests 1-8: the offered rate (02, 04).
+            # Test 9: the measured request rate; tests 2-8: the offered rate (02, 04).
             result.update(status="ok", max_rps=best["measured_rps"] if self.test == MIXED_TEST else best["rate"],
-                          best_step=best["rate"])
+                          best_step=best["rate"], db_bound=best.get("db_bound", False))
         else:
             crashes = [e["event"] for e in self.events if e["event"] in ("crash", "oom")]
             result.update(status=crashes[-1] if crashes else "slo_fail", max_rps=None)
         result["settle_unstable"] = any(st.get("settle_unstable") for st in steps)
+        result["db_bound_steps"] = sum(1 for st in steps if st.get("db_bound"))
         atomic_write_json(self.out / f"search.a{self.attempt}.json", result)
         return result
 
