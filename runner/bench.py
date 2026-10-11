@@ -5,12 +5,16 @@
   bench.py conformance [--stacks …]                conformance/check.py against each stack
   bench.py calibrate                               DB, k6 and downstream ceilings → results/calibration.json
   bench.py run [--stacks …] [--tests …] [--dry-run] full campaign → results/<campaign-id>/
-  bench.py resume <campaign-id>                    continue; completed pairs are skipped
+  bench.py resume <campaign-id>                    continue; completed pairs are skipped (after a
+                                                   spot pause: only on identical hardware)
   bench.py common-load <campaign-id>               rerun only the test 9 common-load phase
   bench.py csv <campaign-id>                       rebuild results.csv and scores.txt
 
 Hosts come from runner/hosts.toml (written by infra/host-setup/deploy.sh). Without it the
 runner works in local mode: every role is this machine.
+
+Exit status: 0 done, 2 INVALID step (fix, then resume), 3 paused by a spot interruption or
+resume refused because the hardware differs.
 """
 import argparse
 import json
@@ -121,7 +125,9 @@ def cmd_run(ctx, args):
 
 
 def cmd_resume(ctx, args):
-    Campaign(ctx, args.campaign_id).run()
+    c = Campaign(ctx, args.campaign_id)
+    c.check_hardware()  # refuses (exit 3) unless every host matches the manifest
+    c.run()
     return 0
 
 
@@ -131,7 +137,9 @@ def cmd_common_load(ctx, args):
         done = c.dir / stack / "common-load" / "result.json"
         if done.exists():
             done.rename(done.with_suffix(".previous.json"))
-    c.common_load()
+    c.check_hardware()
+    with c.watching():
+        c.common_load()
     c.write_csv()
     return 0
 

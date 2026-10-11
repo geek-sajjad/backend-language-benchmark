@@ -4,6 +4,7 @@ import time
 from .cluster import CommandError, Database, Stack
 from .config import MIXED_TEST
 from .k6 import K6Error
+from .spot import SpotInterruption
 from .util import atomic_write, atomic_write_json, log
 
 
@@ -297,16 +298,28 @@ def fmt(ms):
 
 
 def run_pair(ctx, stack, test, out_dir):
-    """Runs a pair and writes result.json. SetupError → status setup_error (not scored)."""
+    """Runs a pair and writes result.json. SetupError → status setup_error (not scored).
+    A spot interruption anywhere in the pair raises SpotInterruption and nothing is written."""
     pair = Pair(ctx, stack, test, out_dir)
+    spot = ctx.k6.spot
     try:
         result = pair.run()
     except SetupError as e:
+        if spot and spot.explains():
+            raise SpotInterruption(spot.host, spot.reason) from e
         log(f"  SETUP ERROR: {e}")
         result = {"stack": stack, "test": test, "status": "setup_error", "error": str(e), "max_rps": None}
         atomic_write(out_dir / "app.log", pair.stack.logs())
-    except (CommandError, K6Error) as e:
+    except (CommandError, K6Error, InvalidStep) as e:
+        # A host going away makes commands fail and Prometheus lose its metrics: that is an
+        # interruption, not an INVALID setup.
+        if spot and spot.explains():
+            raise SpotInterruption(spot.host, spot.reason) from e
+        if isinstance(e, InvalidStep):
+            raise
         raise InvalidStep(f"setup command failed: {e}") from e
+    if spot:
+        spot.check()  # a notice that arrived after the last step still discards the pair
     if result["status"] != "setup_error":
         atomic_write_json(out_dir / "result.json", result)
     return result

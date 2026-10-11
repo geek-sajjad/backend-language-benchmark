@@ -32,6 +32,12 @@ class Host:
             raise CommandError(f"[{self.name}] `{cmd}` exited {p.returncode}: {p.stderr.strip()[-2000:]}")
         return p.stdout
 
+    def sh_rc(self, cmd, timeout=600):
+        """(exit code, stdout). Exit 255 from a remote host means ssh itself failed."""
+        p = subprocess.run(self._argv(cmd), cwd=REPO if self.local else None,
+                           capture_output=True, text=True, timeout=timeout)
+        return p.returncode, p.stdout
+
     def popen(self, cmd):
         return subprocess.Popen(self._argv(cmd), cwd=REPO if self.local else None,
                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)

@@ -2,8 +2,10 @@
 import json
 import os
 import subprocess
+import time
 
 from .config import TEST_SCRIPTS
+from .spot import SpotInterruption
 from .util import REPO
 
 
@@ -18,6 +20,7 @@ def k6_version():
 class K6:
     def __init__(self, cfg, cluster, prom):
         self.cfg, self.cluster, self.prom = cfg, cluster, prom
+        self.spot = None  # SpotWatch during a campaign: a trip kills the running k6 process
 
     def run(self, test, summary_path, *, mode="step", rate=0.0, settle_s=0, tail_s=0, measure_s=0,
             from_rate=0.0, to_rate=0.0, duration_s=0, check_body=False, tags=None, base_url=None,
@@ -68,12 +71,32 @@ class K6:
 
         summary_path.parent.mkdir(parents=True, exist_ok=True)
         length = duration_s if mode == "warmup" else settle_s + measure_s
-        p = subprocess.run(argv, cwd=REPO, env=proc_env, capture_output=True, text=True,
-                           timeout=length + 120)
+        p = self._run(argv, proc_env, length + 120)
         # 0 = thresholds passed, 99 = a threshold failed (the runner judges the numbers itself).
         if p.returncode not in (0, 99) or not summary_path.exists():
             raise K6Error(f"k6 exited {p.returncode}: {p.stderr.strip()[-2000:]}")
         return parse_summary(summary_path, measure_s, mode)
+
+
+    def _run(self, argv, env, timeout):
+        if self.spot:
+            self.spot.check()
+        p = subprocess.Popen(argv, cwd=REPO, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        deadline = time.time() + timeout
+        while True:
+            try:
+                out, err = p.communicate(timeout=1)
+                break
+            except subprocess.TimeoutExpired:
+                if self.spot and self.spot.tripped.is_set():
+                    p.kill()
+                    p.communicate()
+                    raise SpotInterruption(self.spot.host, self.spot.reason) from None
+                if time.time() > deadline:
+                    p.kill()
+                    p.communicate()
+                    raise K6Error(f"k6 still running after {timeout} s") from None
+        return subprocess.CompletedProcess(argv, p.returncode, out, err)
 
 
 def parse_summary(path, measure_s, mode="step"):

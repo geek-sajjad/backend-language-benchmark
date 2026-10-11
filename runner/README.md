@@ -8,10 +8,12 @@ python3 runner/bench.py conformance --stacks all      # conformance/check.py aga
 python3 runner/bench.py calibrate                     # → results/calibration.json
 python3 runner/bench.py run --stacks all --dry-run    # plan + estimated duration
 python3 runner/bench.py run --stacks all              # → results/<campaign-id>/
-python3 runner/bench.py resume <campaign-id>          # after an INVALID stop or a crash
+python3 runner/bench.py resume <campaign-id>          # after an INVALID stop, a spot pause or a crash
 python3 runner/bench.py common-load <campaign-id>     # rerun only the test 9 common-load phase
 python3 runner/bench.py csv <campaign-id>             # rebuild results.csv + scores.txt
 ```
+
+Exit status: 0 done, 2 INVALID step (fix the cause, then `resume`), 3 paused by a spot interruption, or `resume` refused because a host's hardware fingerprint differs from the manifest (wait for identical hardware). Details in [docs/06](../docs/06-runner-and-results.md#spot-interruptions).
 
 `--config` picks another `bench.toml` (only for development; a scored campaign uses the frozen one) and `--hosts` another hosts file. "all" means every configured stack that has a `stacks/<name>/compose.yml`; the others are skipped with a note.
 
@@ -64,7 +66,8 @@ Each (stack, test) pair: reset (restart the container; tests 5 and 9 also recrea
 | `benchlib/prom.py` | Prometheus window queries (expressions in `monitoring/README.md`) |
 | `benchlib/search.py` | The per-pair search, verdicts, recovery |
 | `benchlib/campaign.py` | Manifest, test-major randomized order, resume, common load, `results.csv` |
+| `benchlib/spot.py` | Spot interruption watcher (notice polling, lost SSH), host fingerprint for `resume` |
 | `benchlib/calibrate.py` | pgbench ceilings for tests 2–5, k6 ceiling (echo server), downstream-mock ceiling |
 | `pgbench/test{2..5}.sql` | The SQL each test produces, for the DB ceiling |
 
-All result files are written atomically (temp file + rename). The runner never deletes a campaign folder; a rerun pair adds a new attempt (`search.a2.json`, `steps/a2-…`).
+All result files are written atomically (temp file + rename). The runner never deletes a campaign folder; a rerun pair adds a new attempt (`search.a2.json`, `steps/a2-…`). Steps of an unfinished attempt (INVALID, interrupted, crashed) are moved to `discarded/<time>/` before the rerun, and results set aside after the app host moved are renamed `result.superseded-<time>.json`.

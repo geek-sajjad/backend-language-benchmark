@@ -1,4 +1,5 @@
 """Campaign orchestration: run, resume, common-load, csv (docs/06-runner-and-results.md)."""
+import contextlib
 import csv
 import io
 import random
@@ -11,6 +12,7 @@ from .config import MIXED_TEST
 from .k6 import K6, k6_version
 from .prom import Prom
 from .search import InvalidStep, Pair, SetupError, run_pair
+from .spot import FINGERPRINT_KEYS, SpotInterruption, SpotWatch, fingerprint
 from .util import REPO, atomic_write, atomic_write_json, log, read_json, set_log_file, utc_now
 
 
@@ -58,16 +60,6 @@ class Campaign:
             except Exception as e:  # noqa: BLE001 - recorded, not fatal
                 return f"unavailable: {e}"
 
-        hosts = {}
-        for name, h in c.hosts.items():
-            hosts[name] = {
-                "private_ip": h.ip,
-                "kernel": safe(lambda h=h: h.sh("uname -r").strip()),
-                "docker": safe(lambda h=h: h.sh("docker version --format '{{.Server.Version}}'").strip()),
-                "instance_type": safe(lambda h=h: h.sh(imds("instance-type"), check=False).strip()) if not c.local else "local",
-                "instance_id": safe(lambda h=h: h.sh(imds("instance-id"), check=False).strip()) if not c.local else "local",
-                "ami": safe(lambda h=h: h.sh(imds("ami-id"), check=False).strip()) if not c.local else "local",
-            }
         manifest = {
             "campaign_id": self.id,
             "created": utc_now().isoformat(),
@@ -78,7 +70,7 @@ class Campaign:
             "shuffle_seed": seed,
             "stacks": list(stacks),
             "tests": list(tests),
-            "hosts": hosts,
+            "hosts": fingerprint(c),  # compared by `resume` (06 "Spot interruptions")
             "k6": k6_version(),
             "postgres": safe(db.version),
             "image_digests": safe(lambda: c.app.sh("cat results/image-digests.json", check=False).strip() or None),
@@ -101,22 +93,110 @@ class Campaign:
     def run(self):
         m = self.manifest
         log(f"campaign {self.id}: stacks {m['stacks']}, tests {m['tests']}")
-        for test in m["tests"]:  # test-major order
-            for stack in self.order(test):
-                out = self.pair_dir(stack, test)
-                if (out / "result.json").exists():
-                    continue
-                log(f"{stack} · test {test}")
-                try:
-                    r = run_pair(self.ctx, stack, test, out)
-                except InvalidStep as e:
-                    log(f"INVALID: {stack} test {test}: {e}")
-                    log(f"fix the cause, then: python3 runner/bench.py resume {self.id}")
-                    raise SystemExit(2)
-                log(f"  → {r['status']}, max_rps {r.get('max_rps')}")
-        if MIXED_TEST in m["tests"]:
-            self.common_load()
+        with self.watching():
+            for test in m["tests"]:  # test-major order
+                for stack in self.order(test):
+                    out = self.pair_dir(stack, test)
+                    if (out / "result.json").exists():
+                        continue
+                    log(f"{stack} · test {test}")
+                    self.start_pair(stack, test, out)
+                    try:
+                        r = run_pair(self.ctx, stack, test, out)
+                    except InvalidStep as e:
+                        log(f"INVALID: {stack} test {test}: {e}")
+                        log(f"fix the cause, then: python3 runner/bench.py resume {self.id}")
+                        raise SystemExit(2)
+                    except SpotInterruption:
+                        self.pause(stack, test)
+                    log(f"  → {r['status']}, max_rps {r.get('max_rps')}")
+            if MIXED_TEST in m["tests"]:
+                self.common_load()
         self.write_csv()
+
+    def start_pair(self, stack, test, out):
+        """Records the pair in progress and sets aside the steps of an earlier unfinished attempt
+        (INVALID, interrupted or crashed): a pair is only ever scored from one complete search."""
+        atomic_write_json(self.dir / "current.json", {"stack": stack, "test": test, "started": utc_now().isoformat()})
+        steps = out / "steps"
+        if steps.exists() and any(steps.iterdir()):
+            dest = out / "discarded" / utc_now().strftime("%Y%m%dT%H%M%SZ")
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            steps.rename(dest)
+            log(f"  unfinished earlier attempt moved to {dest.relative_to(self.dir)}")
+
+    # ------------------------------------------------------------------ spot interruptions
+
+    @contextlib.contextmanager
+    def watching(self):
+        watch = SpotWatch(self.cluster).start()
+        self.ctx.k6.spot = watch
+        try:
+            yield watch
+        finally:
+            watch.stop()
+            self.ctx.k6.spot = None
+
+    def pause(self, stack, test):
+        """Finished pairs stay as they are; the interrupted pair is rerun by `resume` (06)."""
+        record = self.ctx.k6.spot.paused_record(stack, test)
+        atomic_write_json(self.dir / "paused.json", record)
+        log(f"PAUSED (paused_spot): {record['host']}: {record['reason']} during {stack} test {test}")
+        log("results so far are saved. When the hosts run again: terraform apply -refresh-only, "
+            f"deploy.sh, then python3 runner/bench.py resume {self.id}")
+        raise SystemExit(3)
+
+    def check_hardware(self):
+        """Before `resume`: refuse unless every host matches the manifest's fingerprint. A host
+        that restarted (new boot_id) runs on another physical machine now; if that is the app host,
+        the finished pairs of the current test are rerun, so one test is never split across machines."""
+        if self.cluster.local:
+            return
+        m = self.manifest
+        now = fingerprint(self.cluster)
+        diffs = [f"{host} {k}: {rec[k]!r} → {now.get(host, {}).get(k)!r}"
+                 for host, rec in m["hosts"].items() for k in FINGERPRINT_KEYS
+                 if k in rec and now.get(host, {}).get(k) != rec[k]]
+        for key, current in (("k6", k6_version()), ("postgres", Database(self.cluster).version)):
+            try:
+                current = current() if callable(current) else current
+            except Exception as e:  # noqa: BLE001
+                current = f"unavailable: {e}"
+            if m.get(key) and current != m[key]:
+                diffs.append(f"{key}: {m[key]!r} → {current!r}")
+        if diffs:
+            for d in diffs:
+                log(f"hardware differs: {d}")
+            log("not resuming: the campaign stays paused until identical hardware is available")
+            raise SystemExit(3)
+
+        paused = read_json(self.dir / "paused.json")
+        restarted = [h for h, rec in m["hosts"].items() if rec.get("boot_id") and now[h]["boot_id"] != rec["boot_id"]]
+        if not paused and not restarted:
+            return
+        current = read_json(self.dir / "current.json", {})
+        test = (paused or current).get("test")
+        rerun = self.supersede(test) if "app" in restarted and test is not None else []
+        entry = {"paused": paused, "resumed": utc_now().isoformat(), "restarted_hosts": restarted,
+                 "rerun_test": test if rerun else None, "rerun_stacks": rerun}
+        m.setdefault("pauses", []).append(entry)
+        for h in restarted:
+            m["hosts"][h]["boot_id"] = now[h]["boot_id"]
+        atomic_write_json(self.dir / "manifest.json", m)
+        (self.dir / "paused.json").unlink(missing_ok=True)
+        log(f"resuming after pause: restarted hosts {restarted or 'none'}"
+            + (f"; test {test} rerun for {', '.join(rerun)}" if rerun else ""))
+
+    def supersede(self, test):
+        """Sets aside the finished results of one test (or the common-load phase) for every stack."""
+        stamp = utc_now().strftime("%Y%m%dT%H%M%SZ")
+        rerun = []
+        for stack in self.manifest["stacks"]:
+            d = self.dir / stack / "common-load" if test == "common" else self.pair_dir(stack, test)
+            if (d / "result.json").exists():
+                (d / "result.json").rename(d / f"result.superseded-{stamp}.json")
+                rerun.append(stack)
+        return rerun
 
     # ------------------------------------------------------------------ common load
 
@@ -138,7 +218,9 @@ class Campaign:
             if (out / "result.json").exists() or stack not in rates:
                 continue
             log(f"{stack} · common load")
+            self.start_pair(stack, "common", out)
             pair = Pair(self.ctx, stack, MIXED_TEST, out)
+            spot = self.ctx.k6.spot
             try:
                 pair.reset()
                 pair.smoke()
@@ -149,9 +231,17 @@ class Campaign:
                 metrics = self.ctx.prom.window(start + duration, duration)
                 samples = [int(x) for x in sampler.communicate(timeout=60)[0].split() if x.isdigit()]
                 state = pair.stack.state() or {}
-            except SetupError as e:
+            except SpotInterruption:
+                self.pause(stack, "common")
+            except Exception as e:
+                if spot and spot.explains():
+                    self.pause(stack, "common")
+                if not isinstance(e, SetupError):
+                    raise
                 log(f"  SETUP ERROR: {e}")
                 continue
+            if spot and spot.tripped.is_set():
+                self.pause(stack, "common")
             peak_cgroup = round(max(samples) / 2**20, 1) if samples else None
             metric = self.cfg.get("memory", "metric", default="cgroup_anon_shmem")
             peak = peak_cgroup if metric == "cgroup_anon_shmem" else metrics.get("app_rss_mb")
@@ -202,13 +292,6 @@ class Campaign:
                            capture_output=True, text=True)
         atomic_write(self.dir / "scores.txt", p.stdout + p.stderr)
         log(f"wrote {self.dir / 'results.csv'} ({len(rows)} rows) and scores.txt")
-
-
-def imds(path):
-    """EC2 instance metadata (IMDSv2)."""
-    return ("t=$(curl -s -m 2 -X PUT http://169.254.169.254/latest/api/token "
-            "-H 'X-aws-ec2-metadata-token-ttl-seconds: 60'); "
-            f"curl -s -m 2 -H \"X-aws-ec2-metadata-token: $t\" http://169.254.169.254/latest/meta-data/{path}")
 
 
 def estimate(cfg, n_stacks, tests):

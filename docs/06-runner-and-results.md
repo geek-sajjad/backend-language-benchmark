@@ -70,6 +70,8 @@ results/
                                         # AMI, kernel, CPU model, Docker/k6/Postgres versions, stack image
                                         # digests, shuffle seed, calibration results
     calibration.json
+    paused.json                         # only while paused by a spot interruption
+    current.json                        # the pair in progress (used by resume)
     results.csv                         # input for score.py (format in 05-scoring.md)
     scores.txt                          # score.py output
     <stack>/
@@ -97,12 +99,12 @@ results/
 
 All three hosts are persistent spot instances that **stop** (not terminate) when AWS reclaims them ([01](01-architecture.md#instances)). A stopped instance keeps its ID, disk, private IP and instance type; AWS starts it again when capacity returns, usually on a different physical machine. The rule is that **an interruption never mixes different hardware into one result**:
 
-1. **Detect.** The runner polls the spot interruption notice (`/latest/meta-data/spot/instance-action`, about 2 min warning) on all three hosts between and during steps. Losing SSH to a host mid-step counts as an interruption too.
-2. **Pause and save.** The runner stops sending load, keeps every finished (stack, test) pair as it is (step files are already written atomically), marks the **interrupted pair for rerun** (its partial search is discarded) and writes `paused.json` (time, host, reason). It then exits with status `paused_spot`. Nothing is scored from a pair that saw an interruption.
+1. **Detect.** A background thread polls the spot interruption notice (`/latest/meta-data/spot/instance-action`, about 2 min warning) on all three hosts every 10 s, between and during steps. A host that fails 3 polls in a row over SSH (~30 s) counts as interrupted too. When a command fails or a step turns INVALID, the runner first polls again to check whether a host is going away, so an interruption is never reported as an INVALID setup.
+2. **Pause and save.** The runner kills the running k6 process, keeps every finished (stack, test) pair as it is (step files are already written atomically), writes no `result.json` for the **interrupted pair** and writes `paused.json` (time, host, reason, stack, test). It then exits with status 3 (`paused_spot`). Nothing is scored from a pair that saw an interruption, even if the notice came after its last step. When the pair is rerun, its unfinished steps are moved to `<stack>/<test>/discarded/<time>/`.
 3. **Wait.** Nothing runs until the hosts are back. When they are (`terraform apply -refresh-only`, then `./infra/host-setup/deploy.sh`, because the public IPs change), the operator runs `bench.py resume <campaign-id>`. This can be hours or another day later.
-4. **Check the hardware before continuing.** `resume` compares each host with the fingerprint stored in `manifest.json`: **instance type, CPU model (`lscpu`), core count, AMI, kernel, Docker / k6 / Postgres versions**. If anything differs, `resume` refuses and the campaign stays paused until identical hardware is available again. It never continues on a different machine type.
+4. **Check the hardware before continuing.** `resume` compares each host with the fingerprint stored in `manifest.json`: **instance type, instance ID, CPU model (`lscpu`), core count, AMI, kernel, Docker / k6 / Postgres versions**. If anything differs, `resume` refuses (exit 3) and the campaign stays paused until identical hardware is available again. It never continues on a different machine type. The check runs on every `resume`, not only after a pause.
 5. **Rerun what the move could have affected.**
-   - **app host was interrupted:** it now runs on a different physical machine. Every pair of the **current test** that already finished is rerun too, so all stacks in one test are always compared on the same physical machine. Earlier tests are kept (each test is scored on its own).
+   - **app host was interrupted:** it now runs on a different physical machine. Every pair of the **current test** that already finished is rerun too, so all stacks in one test are always compared on the same physical machine. Earlier tests are kept (each test is scored on its own). The runner detects the move from the host's `boot_id` (stored in the manifest), so this also works when the loadgen died before it could write `paused.json`. The current test comes from `paused.json`, or else from `current.json` (the pair in progress). Results set aside this way are renamed `result.superseded-<time>.json`.
    - **db or loadgen was interrupted:** only the interrupted pair is rerun. These hosts aren't measured, and the per-step validity checks (db and loadgen CPU, `dropped_iterations`, ethtool) keep proving their headroom.
 
 `terraform destroy` or `-replace` during a campaign is a re-provision, not an interruption: then **all** stacks are rerun ([04 fairness rules](04-methodology.md#fairness-rules)). Every pause and the reruns it caused are listed in the manifest.
