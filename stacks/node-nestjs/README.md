@@ -14,4 +14,4 @@ Fill in once implemented:
 | Runtime flags / env | |
 | Deviations from the spec | none |
 
-Required files: `Dockerfile`, `compose.yml` (`network_mode: host`, `mem_limit: 30g`, container name `app`), app source.
+Required files: `Dockerfile`, `compose.yml` (`network_mode: host`, `mem_limit: 7g`, container name `app`), app source.

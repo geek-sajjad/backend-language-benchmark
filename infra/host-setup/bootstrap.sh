@@ -92,7 +92,8 @@ sed -ri '/^[^#].*\sswap\s/s/^/#/' /etc/fstab
 if [[ "$ROLE" == loadgen ]]; then
   if [[ "$(k6 version 2>/dev/null || true)" != "k6 v${K6_VERSION} "* ]]; then
     log "installing k6 v${K6_VERSION}"
-    tarball="k6-v${K6_VERSION}-linux-amd64.tar.gz"
+    k6_arch="$(dpkg --print-architecture)"  # amd64, or arm64 on a Graviton loadgen
+    tarball="k6-v${K6_VERSION}-linux-${k6_arch}.tar.gz"
     tmp="$(mktemp -d)"
     curl -fsSL --retry 5 -o "$tmp/$tarball" \
       "https://github.com/grafana/k6/releases/download/v${K6_VERSION}/${tarball}"
@@ -102,7 +103,7 @@ if [[ "$ROLE" == loadgen ]]; then
       log "WARNING: no k6 checksum given, skipping verification"
     fi
     tar -xzf "$tmp/$tarball" -C "$tmp"
-    install -m 0755 "$tmp/k6-v${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+    install -m 0755 "$tmp/k6-v${K6_VERSION}-linux-${k6_arch}/k6" /usr/local/bin/k6
     rm -rf "$tmp"
   fi
   k6 version

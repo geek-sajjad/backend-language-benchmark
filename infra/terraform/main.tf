@@ -8,10 +8,16 @@ locals {
     loadgen = { type = var.loadgen_type, private_ip = "10.42.0.12" }
   }
 
-  # Nitro (m7a/c7a) primary interface name on Ubuntu 24.04; the runner reads ethtool counters from it.
+  # Nitro (m7a/c7a/c7g) primary interface name on Ubuntu 24.04; the runner reads ethtool counters from it.
   net_iface = "ens5"
 
-  ami_id = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu[0].id
+  # app and db are x86 (c7a/m7a); loadgen may be Graviton (c7g, arm64). Each host gets the
+  # Ubuntu image for its own architecture.
+  host_arch = { for role, h in local.hosts : role => contains(data.aws_ec2_instance_type.by_type[h.type].supported_architectures, "arm64") ? "arm64" : "x86_64" }
+  ami_ids = {
+    x86_64 = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu["x86_64"].id
+    arm64  = var.ami_id_arm64 != "" ? var.ami_id_arm64 : try(data.aws_ami.ubuntu["arm64"].id, "")
+  }
 
   # First AZ that offers all three instance types (cluster placement groups live in one AZ).
   common_azs        = sort(tolist(setintersection([for o in data.aws_ec2_instance_type_offerings.by_type : toset(o.locations)]...)))
@@ -20,18 +26,27 @@ locals {
 
 # ---------------------------------------------------------------- lookups
 
+data "aws_ec2_instance_type" "by_type" {
+  for_each      = toset([var.app_type, var.db_type, var.loadgen_type])
+  instance_type = each.value
+}
+
 data "aws_ami" "ubuntu" {
-  count       = var.ami_id == "" ? 1 : 0
+  # Only the architectures in use whose AMI isn't pinned.
+  for_each = setsubtract(toset(values(local.host_arch)), compact([
+    var.ami_id != "" ? "x86_64" : "",
+    var.ami_id_arm64 != "" ? "arm64" : "",
+  ]))
   most_recent = true
   owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-${each.value == "arm64" ? "arm64" : "amd64"}-server-*"]
   }
   filter {
     name   = "architecture"
-    values = ["x86_64"]
+    values = [each.value]
   }
   filter {
     name   = "virtualization-type"
@@ -157,7 +172,7 @@ resource "random_password" "grafana_admin" {
 resource "aws_instance" "host" {
   for_each = local.hosts
 
-  ami                         = local.ami_id
+  ami                         = local.ami_ids[local.host_arch[each.key]]
   instance_type               = each.value.type
   subnet_id                   = aws_subnet.public.id
   private_ip                  = each.value.private_ip
@@ -171,7 +186,7 @@ resource "aws_instance" "host" {
   user_data = templatefile("${path.module}/../host-setup/cloud-init.yaml.tftpl", {
     role          = each.key
     k6_version    = var.k6_version
-    k6_sha256     = var.k6_sha256
+    k6_sha256     = var.k6_sha256[local.host_arch[each.key] == "arm64" ? "arm64" : "amd64"]
     bootstrap_b64 = filebase64("${path.module}/../host-setup/bootstrap.sh")
   })
 

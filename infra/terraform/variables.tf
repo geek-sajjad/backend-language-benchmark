@@ -1,31 +1,31 @@
 variable "region" {
   description = "AWS region for the whole lab."
   type        = string
-  default     = "us-east-1"
+  default     = "eu-north-1"
 }
 
 variable "availability_zone" {
-  description = "AZ for the subnet. Empty = the first AZ (alphabetically) that offers all three instance types."
+  description = "AZ for the subnet. eu-north-1c had the cheapest c7a/m7a spot prices on 2026-10-10. Empty = the first AZ (alphabetically) that offers all three instance types."
   type        = string
-  default     = ""
+  default     = "eu-north-1c"
 }
 
 variable "app_type" {
   description = "Instance type of the measured app host. The results depend on it: never change it within a campaign."
   type        = string
-  default     = "m7a.2xlarge"
+  default     = "c7a.xlarge"
 }
 
 variable "db_type" {
-  description = "Instance type of the db host (Postgres + downstream mock). Upsize to c7a.8xlarge if calibration demands it."
+  description = "Instance type of the db host (Postgres + downstream mock). Same size as the app: the db may be the bottleneck, and DB-bound results are reported (docs/04)."
   type        = string
-  default     = "c7a.4xlarge"
+  default     = "c7a.xlarge"
 }
 
 variable "loadgen_type" {
-  description = "Instance type of the loadgen host (k6, runner, Prometheus, Grafana). Upsize to c7a.8xlarge if calibration demands it."
+  description = "Instance type of the loadgen host (k6, runner, Prometheus, Grafana). Graviton (arm64): the loadgen isn't measured, and 16 Graviton cores cost less on spot than 8 AMD cores. Upsize to c7g.8xlarge if calibration demands it."
   type        = string
-  default     = "c7a.4xlarge"
+  default     = "c7g.4xlarge"
 }
 
 variable "operator_ip" {
@@ -56,9 +56,9 @@ variable "grafana_public_view" {
 }
 
 variable "use_spot" {
-  description = "Run all three hosts as (persistent, stop-on-interruption) spot instances. Dev sessions only: calibration, pilot and the scored campaign use on-demand."
+  description = "Run all three hosts as (persistent, stop-on-interruption) spot instances. Used for everything, including the scored campaign; the runner pauses on an interruption (docs/06). false = on-demand."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "ssh_public_key_path" {
@@ -68,7 +68,13 @@ variable "ssh_public_key_path" {
 }
 
 variable "ami_id" {
-  description = "AMI for all three hosts. Empty = latest Canonical Ubuntu 24.04 LTS amd64 (hvm-ssd-gp3). Pin it for the scored campaign."
+  description = "AMI for the x86_64 hosts (app, db). Empty = latest Canonical Ubuntu 24.04 LTS amd64 (hvm-ssd-gp3). Pin it for the scored campaign."
+  type        = string
+  default     = ""
+}
+
+variable "ami_id_arm64" {
+  description = "AMI for arm64 (Graviton) hosts, i.e. loadgen. Empty = latest Canonical Ubuntu 24.04 LTS arm64 (hvm-ssd-gp3). Pin it together with ami_id, from the same Canonical release."
   type        = string
   default     = ""
 }
@@ -86,7 +92,10 @@ variable "k6_version" {
 }
 
 variable "k6_sha256" {
-  description = "SHA-256 of k6-v<k6_version>-linux-amd64.tar.gz (from the release's checksums.txt). Change it together with k6_version."
-  type        = string
-  default     = "b5a8003c86f35f5cd5ceef1490312c48e587696c94d998cefc6d7b3b4cb1597d"
+  description = "SHA-256 of k6-v<k6_version>-linux-<arch>.tar.gz per architecture (from the release's checksums.txt). Change it together with k6_version."
+  type        = map(string)
+  default = {
+    amd64 = "b5a8003c86f35f5cd5ceef1490312c48e587696c94d998cefc6d7b3b4cb1597d"
+    arm64 = "4ecd64cadcc792402d16293836115480419c4447c032858f564852d98f1bf54c"
+  }
 }

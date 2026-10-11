@@ -2,7 +2,7 @@
 # Rendered by infra/terraform/main.tf (templatefile) once per host. Variables:
 #   role          app | db | loadgen
 #   k6_version    k6 release for loadgen, e.g. 2.2.0
-#   k6_sha256     sha256 of k6-v<version>-linux-amd64.tar.gz
+#   k6_sha256     sha256 of k6-v<version>-linux-<arch>.tar.gz for this host's architecture
 #   bootstrap_b64 base64 of infra/host-setup/bootstrap.sh (the actual, idempotent setup)
 # Progress: /var/log/cloud-init-output.log; success marker: /var/lib/bench/bootstrap.done
 hostname: bench-${role}

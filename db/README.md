@@ -9,7 +9,7 @@ Postgres 18 schema, deterministic seed and server config ([docs/02-test-spec.md]
 | `init/03-constraints.sql` | Foreign keys and secondary indexes, added after the load (faster seeding, same final schema) |
 | `init/04-create-bench.sh` | Marks `bench_template` as a template and creates `bench` from it |
 | `reset.sql` | Recreates `bench` from `bench_template`, then `VACUUM ANALYZE` and `pg_prewarm` |
-| `postgresql.conf` | Server config for the db host (c7a.4xlarge) |
+| `postgresql.conf` | Server config for the db host (c7a.xlarge, 4 vCPU / 8 GiB) |
 | `compose.yml` | `postgres:18.6`, host networking, user/password/db `bench` |
 
 ```bash

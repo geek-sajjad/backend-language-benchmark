@@ -19,8 +19,18 @@ output "instance_types" {
 }
 
 output "ami_id" {
-  description = "AMI used by all three hosts. Pass it back as -var ami_id=... to keep it for later sessions."
-  value       = local.ami_id
+  description = "AMI of the x86_64 hosts (app, db). Pass it back as -var ami_id=... to keep it for later sessions."
+  value       = local.ami_ids["x86_64"]
+}
+
+output "ami_id_arm64" {
+  description = "AMI of the arm64 hosts (loadgen on Graviton), empty if none. Pass it back as -var ami_id_arm64=..."
+  value       = local.ami_ids["arm64"]
+}
+
+output "host_arch" {
+  description = "CPU architecture per role (for the campaign manifest)."
+  value       = local.host_arch
 }
 
 output "availability_zone" {
