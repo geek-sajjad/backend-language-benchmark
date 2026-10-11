@@ -96,11 +96,11 @@ A fixed pause isn't enough after a **failed** step. An overloaded server may sti
 
 Wait at least **10 s** and at most **60 s**. If the conditions aren't met after 60 s, the runner **restarts the container and reruns the warm-up**, then continues the search. Each step records `recovery_s` and `recovery_restart: true/false` for transparency.
 
-### Verifying the settle length (pilot)
+### Verifying the settle length
 
 15 s of settle is a starting value, not a guess we trust blindly. For every passing step the runner compares the **p99 of the last 5 s of settle** with the **p99 of the measure window**. If they differ by more than 20%, the server was still adjusting when measurement started, and the step is flagged `settle_unstable`.
 
-During the pilot ([07-runbook.md](07-runbook.md#6-pilot-not-scored)): if any stack or test shows `settle_unstable`, `settle_s` is raised **for every stack** (for example to 20 or 30 s) before the methodology freeze. In the scored campaign the flag is only reported, never used to change a result.
+No pilot is run (decided 2026-10-11), so 15 s is used as it is. In the scored campaign the flag is only reported, never used to change a result. If many steps are flagged, that is stated with the results.
 
 ### Parameters
 
@@ -148,7 +148,7 @@ A crash or OOM at a higher step still records the last passing rate as `max_rps`
 
 The db host is the same size as the app (4 cores / 8 GB), to keep the lab cheap. **Postgres is allowed to be the bottleneck** in the database tests (2–5 and 9), and the results say so instead of hiding it. In production the database is usually the wall too.
 
-Before the campaign, the runner's `calibrate` command measures the **DB ceiling** for tests 2–5. It runs the exact SQL each test produces through `pgbench` custom scripts with prepared statements, at 64 clients, from the loadgen host. That gives the maximum the database itself can serve over this network. The db-sizing test measured on this host type: test 2 ≈ 130k, test 3 ≈ 7.1k (with the old 100-row page; ~13.7k expected with 50 rows, from a local pgbench ratio of 1.93×), test 4 ≈ 15.1k, test 5 ≈ 9.0k req/s ([results/db-sizing-2026-10](../results/db-sizing-2026-10/summary.md)).
+Before the campaign session, the **DB ceiling** for tests 2–5 is measured **manually**: the exact SQL each test produces runs through `pgbench` custom scripts (`runner/pgbench/`) with prepared statements, at 64 clients, from the loadgen host (the runner's optional `calibrate` command does the same). The values are written by hand to `results/calibration.json`, where the manifest and the charts read them. That gives the maximum the database itself can serve over this network. The db-sizing test measured on this host type: test 2 ≈ 130k, test 3 ≈ 7.1k (with the old 100-row page; ~13.7k expected with 50 rows, from a local pgbench ratio of 1.93×), test 4 ≈ 15.1k, test 5 ≈ 9.0k req/s ([results/db-sizing-2026-10](../results/db-sizing-2026-10/summary.md)).
 
 | Rule | What happens |
 |---|---|
@@ -161,8 +161,8 @@ Stacks below the DB ceiling are still measured cleanly: for them the app is the 
 
 ## Proving the load generator is not the bottleneck
 
-- `calibrate` also runs the echo script (`00-echo.js`, one GET per iteration) against a trivial echo server on the app host to measure **k6's own max rate** on the chosen loadgen size, with Prometheus and remote-write running and Grafana stopped, exactly as in the campaign.
-- If any stack's test needs more than 70% of that ceiling, first resize the loadgen to `c7g.8xlarge` and recalibrate. Only if that isn't enough, go to a bigger single loadgen (`c7g.16xlarge`). Splitting across several loadgen hosts is **not implemented**: one host keeps the end-of-test summary exact ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)).
+- The manual calibration also runs the echo script (`00-echo.js`, one GET per iteration) against a trivial echo server on the app host to measure **k6's own max rate** on the chosen loadgen size, with Prometheus and remote-write running and Grafana stopped, exactly as in the campaign.
+- If any stack's test needs more than 70% of that ceiling, the campaign uses a `c7g.8xlarge` loadgen from the start (chosen before provisioning). Only if that isn't enough, go to a bigger single loadgen (`c7g.16xlarge`). Splitting across several loadgen hosts is **not implemented**: one host keeps the end-of-test summary exact ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)).
 - `dropped_iterations = 0` and loadgen CPU < 70% are validity checks on every step.
 - k6 runs with Go's garbage collector off (`GOGC=off`, `GOMEMLIMIT=16GiB`: it collects only near that memory limit; `[loadgen]` in `bench.toml`). In the k6 sizing test on Graviton ([results/k6-sizing-2026-10](../results/k6-sizing-2026-10/)), the default collector made k6 drop iterations at only 40–60% CPU, with p99 of 30–60 ms against an echo server that answers in under 1 ms. With it off: 0 dropped and p99 0.5 ms at 11,000 req/s on 3 cores, and ~10% less CPU per request. Calibration measures the ceiling with this setting.
 
@@ -175,9 +175,9 @@ Stacks below the DB ceiling are still measured cleanly: for them the app is the 
 
 ---
 
-## Appendix A: candidate reported-only metrics (undecided)
+## Appendix A: reported-only metrics (considered, not run)
 
-> **Status: not decided.** None of these are in `config/bench.toml`, the runner or the scores yet. Each needs a yes/no before the methodology freeze (`methodology-v1`). See [D8 in the roadmap](08-roadmap.md#open-decisions). They would be **shown in the video and published in the results, but never fed into `score.py`**, so they can't change the ranking.
+> **Status: decided 2026-10-11, none of these will be run.** They are not in `config/bench.toml`, the runner or the scores, and they won't be added for this campaign (see [D8 in the roadmap](08-roadmap.md#open-decisions)). They are kept here only as a record of what was considered. Each would have been shown in the video and published in the results, but never fed into `score.py`, so dropping them doesn't change the ranking.
 
 ### A.1 Startup time and idle memory
 
@@ -221,6 +221,6 @@ Stacks below the DB ceiling are still measured cleanly: for them the app is the 
 | Cost | One extra search per stack, ~13 min each (~1.5 h per campaign) |
 | Open questions | Test 8 only, or also test 7 (JSON)? Add a 2-core point to draw a scaling curve (1 → 2 → 4)? |
 
-### Time and cost if all four are adopted
+### Time and cost they would have added
 
-About **+4.5 h** of campaign time (~$10 at the current hourly estimate), mostly the soak tests and the core-scaling searches. They would run as a separate runner phase (`bench.py extras`) after the scored campaign, so dropping any of them later doesn't touch the scored results.
+All four together would have added about **4.5 h** of campaign time (~$1.10 at the ~$0.24/h spot estimate in [08](08-roadmap.md#budget-estimate-eu-north-1c-spot-2026-10-11-spot-prices-move-check-before-each-session)), mostly the soak tests and the core-scaling searches, as a separate runner phase (`bench.py extras`) after the scored campaign. That phase is not implemented.

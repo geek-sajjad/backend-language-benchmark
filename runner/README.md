@@ -4,8 +4,8 @@
 
 ```bash
 python3 runner/bench.py check                         # hosts, versions, sysctls, data files, Prometheus targets
-python3 runner/bench.py conformance --stacks all      # conformance/check.py against each stack
-python3 runner/bench.py calibrate                     # → results/calibration.json
+python3 runner/bench.py conformance --stacks all      # conformance/check.py against each stack (local only, not run on AWS)
+python3 runner/bench.py calibrate                     # → results/calibration.json (optional: calibration is done manually, docs/07)
 python3 runner/bench.py run --stacks all --dry-run    # plan + estimated duration
 python3 runner/bench.py run --stacks all              # → results/<campaign-id>/
 python3 runner/bench.py resume <campaign-id>          # after an INVALID stop, a spot pause or a crash

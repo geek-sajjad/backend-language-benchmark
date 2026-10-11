@@ -7,8 +7,8 @@
 | Command | What it does |
 |---|---|
 | `bench.py check` | Pings every host, verifies versions (Docker, k6, Postgres), sysctls and that `bench_template` exists |
-| `bench.py conformance [--stacks …]` | Starts each stack and runs `conformance/check.py` against it. Fails fast. |
-| `bench.py calibrate` | Measures the DB ceiling (pgbench, tests 2–5), the k6 ceiling (echo server) and the downstream mock ceiling. Writes `results/calibration.json`; `run` copies it into the manifest. |
+| `bench.py conformance [--stacks …]` | Starts each stack and runs `conformance/check.py` against it. Fails fast. Local development only: conformance passes once locally at the frozen commit and is not rerun on AWS. |
+| `bench.py calibrate` | Measures the DB ceiling (pgbench, tests 2–5), the k6 ceiling (echo server) and the downstream mock ceiling. Writes `results/calibration.json`; `run` copies it into the manifest. Optional helper: calibration is done manually before the campaign session, and its results are written to `results/calibration.json` by hand ([07](07-runbook.md#2-freeze-the-methodology)). |
 | `bench.py run [--stacks …] [--tests …]` | The full search for each stack × test, then the test 9 common-load phase |
 | `bench.py common-load` | Reruns only the common-load phase (computes `L_common` from existing test 9 results) |
 | `bench.py resume <campaign-id>` | Continues an interrupted or paused campaign and skips completed (stack, test) pairs. After a spot interruption it first checks that the hardware is identical ([Spot interruptions](#spot-interruptions)) |
@@ -19,6 +19,8 @@
 ```
 for test in 2..9:                         # test-major order: one test across all stacks
   for stack in shuffled(stacks, seed):     # randomized order, seed saved in manifest
+    ssh app:  docker compose -f stacks/<stack>/compose.yml build   # first time per stack: real build; later: cache hit
+              record image id (must match the stack's earlier tests)  # not implemented yet: today up uses --no-build
     ssh app:  docker compose -f stacks/<stack>/compose.yml down && up -d
     if test in (5, 9):                     # write tests only; read tests reuse the prewarmed DB
       ssh db: recreate bench from bench_template; VACUUM ANALYZE; pg_prewarm
@@ -69,7 +71,7 @@ results/
     manifest.json                       # git sha, bench.toml copy+hash, instance types & IDs,
                                         # AMI, kernel, CPU model, Docker/k6/Postgres versions, stack image
                                         # digests, shuffle seed, calibration results
-    calibration.json
+    calibration.json                    # hand-written from the manual calibration
     paused.json                         # only while paused by a spot interruption
     current.json                        # the pair in progress (used by resume)
     results.csv                         # input for score.py (format in 05-scoring.md)
@@ -88,6 +90,41 @@ results/
 - Everything above is small (summaries, not raw per-request samples) and is **committed to git**, so viewers can audit any number.
 - No raw per-request streams are written: every number comes from k6 summaries and Prometheus. `results/**/raw/` stays git-ignored for ad-hoc captures.
 - Grafana snapshots of interesting moments (for the video) are exported to `results/<campaign>/grafana/`.
+
+### `calibration.json`
+
+The DB, k6 and downstream ceilings from the manual calibration, done before the campaign session ([07](07-runbook.md#2-freeze-the-methodology)). It is written **by hand** to `results/calibration.json` and committed. The optional `bench.py calibrate` writes the same shape.
+
+```json
+{
+  "created": "2026-10-20T18:00:00Z",
+  "mode": "manual",
+  "db_ceiling": {
+    "2": {"tps": 129621, "clients": 64, "seconds": 30, "db_cpu": 1.00},
+    "3": {"tps": 13700,  "clients": 64, "seconds": 30, "db_cpu": 1.00},
+    "4": {"tps": 15090,  "clients": 64, "seconds": 30, "db_cpu": 1.00},
+    "5": {"tps": 8956,   "clients": 64, "seconds": 30, "db_cpu": 0.99}
+  },
+  "k6_ceiling": {"ceiling_rps": 67000},
+  "downstream_ceiling": {"ceiling_rps": 120000}
+}
+```
+
+The values above are only an example. Use what the manual runs measured.
+
+| Field | Meaning | Read by |
+|---|---|---|
+| `created`, `mode` | When it was measured; `"manual"` for hand-written files (`calibrate` writes `"aws"` or `"local"`) | Manifest only |
+| `db_ceiling."<test>".tps` | pgbench req/s for tests 2–5 (`runner/pgbench/test<N>.sql`, 64 clients, `-M prepared`, from loadgen). Keys are strings | `scoring/charts.py`: the dashed Postgres ceiling line. A test without `tps` gets no line |
+| `db_ceiling."<test>".clients`, `.seconds`, `.db_cpu` | pgbench settings and the db host's CPU (0–1) during the run | Manifest only |
+| `k6_ceiling.ceiling_rps` | k6's highest clean rate against the echo server, with Prometheus running and Grafana stopped. It decides the loadgen size (70% rule, [04](04-methodology.md#proving-the-load-generator-is-not-the-bottleneck)) | Manifest only |
+| `downstream_ceiling.ceiling_rps` | The downstream mock's highest clean rate (must be ≥ 2× the best expected test 6 rate) | Manifest only |
+
+`calibrate` also writes a `stages` list under `k6_ceiling` and `downstream_ceiling`. It's optional in a hand-written file.
+
+Where it's used:
+- `run` copies the file from `results/calibration.json` **on loadgen** into `manifest.json` (`"calibration"`). `deploy.sh` doesn't sync `results/`, so copy the file to loadgen by hand before `run` ([07 step 5](07-runbook.md#5-check-on-loadgen)). Without it the manifest's `calibration` is `null`, but the campaign still runs.
+- `scoring/charts.py` reads the DB ceilings from the manifest copy first, then `results/<campaign-id>/calibration.json`, then the local `results/calibration.json`.
 
 ## Safety
 
@@ -112,7 +149,7 @@ All three hosts are persistent spot instances that **stop** (not terminate) when
 ## Estimated duration
 
 Per (stack, test): reset ~40 s (+30 s DB recreate for tests 5 and 9) + smoke 10 s + warm-up 60 s + probe ~1.5 min + ~5 load steps × (45 s + ~15 s recovery) ≈ **8–9 min**, and it is about the same for fast and slow stacks.
-7 stacks × 8 tests ≈ **8 h**, plus the common-load phase (~30 min) and the occasional recovery restart. Adopting the confirmation step from [09 R5](09-review-findings.md#r5-the-max_rps-search-rewards-noise) adds one step per pair (~1 h).
+7 stacks × 8 tests ≈ **8 h**, plus the common-load phase (~30 min), the image builds (~30 min: one real build per stack, cache hits afterwards) and the occasional recovery restart. Adopting the confirmation step from [09 R5](09-review-findings.md#r5-the-max_rps-search-rewards-noise) adds one step per pair (~1 h).
 
 Where the time went compared with the first draft (~13 h): measure window 45 → 30 s, bisection resolution 3% → 5% (one step fewer per pair), probe starting at the warm-up's end rate with 10 s stages, a 10 s smoke, and no DB recreate for tests that don't write.
 

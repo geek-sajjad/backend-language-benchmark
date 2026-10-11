@@ -27,7 +27,10 @@ A local run only shows that things work. Local numbers are never published.
 
 ## 2. Freeze the methodology
 
-- [ ] All 7 stacks pass conformance
+Conformance runs **only here, locally**, at the commit that gets tagged. It is not rerun on AWS.
+
+- [ ] All 7 stacks pass conformance locally
+- [ ] Calibration is done manually, before the campaign session (DB ceilings for tests 2–5 with pgbench, k6's own ceiling with the echo script, loadgen size; see [04](04-methodology.md#when-postgres-is-the-bottleneck)). The results are written by hand to `results/calibration.json` and committed. The format is in [06](06-runner-and-results.md#calibrationjson). The test 3 ceiling must be measured with the 50-row page, since the db-sizing figure (7.1k) is for 100 rows. If the k6 ceiling demands it, the campaign uses `loadgen_type = c7g.8xlarge` from the start.
 - [ ] Versions are pinned in every Dockerfile and lockfile
 - [ ] `config/bench.toml` is reviewed
 - [ ] `git tag methodology-v1 && git push --tags`
@@ -37,7 +40,7 @@ A local run only shows that things work. Local numbers are never published.
 ```bash
 cd infra/terraform
 terraform init
-terraform apply -var region=eu-north-1 -var operator_ip=$(curl -s ifconfig.me)/32   # ~5 min
+terraform apply -var region=eu-north-1 -var operator_ip=$(curl -s ifconfig.me)/32   # ~5 min; add -var loadgen_type=c7g.8xlarge if calibration chose it
 terraform output                             # public_ips / private_ips maps by role, ssh_commands, hosts_toml
 ```
 
@@ -46,50 +49,37 @@ terraform output                             # public_ips / private_ips maps by 
 ```bash
 ./infra/host-setup/deploy.sh                 # sysctl, Docker, exporters, repo checkout on all hosts
 ./infra/host-setup/seed-db.sh                # schema + seed → bench_template (~1 min locally; time it on AWS)
-./infra/host-setup/build-images.sh           # build every stack that has a compose.yml ON the app host, record image IDs
 terraform -chdir=infra/terraform output grafana_url                  # public live dashboard (view-only)
 terraform -chdir=infra/terraform output -raw grafana_admin_password  # admin login: use via ssh -L 3000:localhost:3000 ubuntu@<loadgen-public-ip>
 ```
 
-## 5. Check and calibrate (on loadgen)
+## 5. Check (on loadgen)
 
 ```bash
+# from the local machine: deploy.sh doesn't sync results/, so copy the calibration file
+ssh ubuntu@<loadgen-public-ip> 'mkdir -p ~/bench/results'
+scp results/calibration.json ubuntu@<loadgen-public-ip>:bench/results/
+
 ssh ubuntu@<loadgen-public-ip>                     # see: terraform output ssh_commands
 cd ~/bench
 python3 runner/bench.py check
-python3 runner/bench.py conformance --stacks all   # same commit, now on AWS
-python3 runner/bench.py calibrate
 ```
 
-- [ ] DB ceiling for tests 2–5 is recorded (expected near the db-sizing test: ~130k / 7.1k / 15.1k / 9.0k req/s). It goes on the charts; the db is not upsized.
-- [ ] Grafana is stopped on loadgen (`docker compose -f monitoring/compose.yml stop grafana`) and stays stopped through calibration, the pilot and the scored campaign. Prometheus keeps running.
-- [ ] k6 ceiling is recorded, with Prometheus running on the same host. If the best expected rate of any test (likely test 2 or 6) is ≥ 70% of it, resize the loadgen to `c7g.8xlarge` (`terraform apply -var loadgen_type=c7g.8xlarge`; only the loadgen restarts) and recalibrate. A resize changes the host's **public IP**: rerun `./infra/host-setup/deploy.sh` afterwards.
-- [ ] The downstream mock sustains ≥ 2× the expected best test 6 rate.
+- [ ] `results/calibration.json` is on loadgen (the runner copies it into the campaign manifest).
+- [ ] Grafana is stopped on loadgen (`docker compose -f monitoring/compose.yml stop grafana`) and stays stopped through the scored campaign. Prometheus keeps running.
 
-## 6. Pilot (not scored)
+No calibration and no pilot run in this session (decided 2026-10-11): calibration was done manually beforehand (step 2), and the campaign starts right after the check.
 
-Run one fast stack (Rust) and one slow stack (PHP) on tests 2, 6 and 9:
-
-```bash
-python3 runner/bench.py run --stacks rust-axum,php-laravel --tests 2,6,9 --campaign pilot
-```
-
-Check that:
-- no step is INVALID for db or loadgen headroom (Grafana is off; check `search.json`, or start Grafana briefly after the pilot to look at the headroom dashboard)
-- the probe estimate E lands near the final `max_rps` (within ~25%) and the search converges in ≤ 8 steps
-- no step is flagged `settle_unstable`. If one is, raise `settle_s` in `config/bench.toml` for **all** stacks and rerun the pilot.
-- recovery restarts are rare (a few per pair at most)
-
-**Pilot results are discarded.**
-
-## 7. Scored campaign
+## 6. Scored campaign
 
 ```bash
 tmux new -s bench
-python3 runner/bench.py run --stacks all           # ~10 h; detach with Ctrl-b d
+python3 runner/bench.py run --stacks all           # ~10.5 h incl. image builds; detach with Ctrl-b d
 # if interrupted or paused:
 python3 runner/bench.py resume <campaign-id>
 ```
+
+Images are not built in advance. Before each benchmark the runner builds that stack's image on the app host (`docker compose build`) and records its image ID. The first build of a stack takes 1–10 min (Rust and Java are the slowest); later builds of the same stack are Docker cache hits and take seconds, so every test of a stack runs the same image. The reset and warm-up come after the build, so the build doesn't affect the measurement. **Runner support is not implemented yet:** today the runner starts stacks with `--no-build` and expects `infra/host-setup/build-images.sh` to have run.
 
 Start it in the evening so it runs unattended overnight; idle hours with the hosts up cost as much as measured ones. Grafana stays off: follow progress in the tmux session. The runner stops itself on any INVALID step. Fix the cause, then run `resume`.
 
@@ -103,7 +93,7 @@ ssh ubuntu@<loadgen-public-ip> 'cd ~/bench && docker compose -f monitoring/compo
 python3 runner/bench.py resume <campaign-id>   # refuses if the hardware fingerprint differs: stay paused, try later
 ```
 
-## 8. Collect and score
+## 7. Collect and score
 
 ```bash
 # on loadgen: Grafana back on, to browse the recorded runs and capture clips for the video
