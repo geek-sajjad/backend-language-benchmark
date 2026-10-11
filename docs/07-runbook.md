@@ -112,6 +112,7 @@ docker compose -f monitoring/compose.yml start grafana
 # from the local machine
 ./infra/host-setup/fetch-results.sh <campaign-id>   # copies results/ from loadgen
 python3 scoring/score.py results/<campaign-id>/results.csv
+python3 scoring/charts.py results/<campaign-id>      # per-test charts with the DB ceiling → charts/ (needs matplotlib)
 git add results/<campaign-id> && git commit -m "results: campaign <campaign-id>"
 ```
 
