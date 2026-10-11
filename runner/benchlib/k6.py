@@ -54,6 +54,9 @@ class K6:
         for k, v in env.items():
             argv += ["-e", f"{k}={v}"]
         proc_env = dict(os.environ)
+        for key, var in (("k6_gogc", "GOGC"), ("k6_gomemlimit", "GOMEMLIMIT")):
+            if self.cfg.get("loadgen", key):
+                proc_env[var] = str(self.cfg.get("loadgen", key))
         if self.prom.available():
             argv += ["--out", "experimental-prometheus-rw"]
             proc_env.update({
