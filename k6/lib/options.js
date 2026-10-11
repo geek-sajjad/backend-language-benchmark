@@ -72,14 +72,24 @@ export function buildOptions({ requestsPerIteration = 1, endpoints = [] } = {}) 
   };
 }
 
+// Per VU. Reading `exec.scenario` builds a new object on every access, and setting a VU tag
+// isn't free either: profiling showed 8-12% of k6's CPU here when done on every iteration.
+// So the start time is read once and the tag is only written when the phase changes.
+let scenarioStart = 0;
+let currentPhase = '';
+
 /** Call at the start of every iteration: tags everything it sends with the current phase. */
 export function tagPhase() {
   let phase = MODE === 'warmup' ? 'warmup' : 'measure';
   if (MODE !== 'warmup') {
-    const elapsed = (Date.now() - exec.scenario.startTime) / 1000;
+    if (scenarioStart === 0) scenarioStart = exec.scenario.startTime;
+    const elapsed = (Date.now() - scenarioStart) / 1000;
     if (elapsed < SETTLE_S - SETTLE_TAIL_S) phase = 'settle';
     else if (elapsed < SETTLE_S) phase = 'settle_tail';
   }
-  exec.vu.metrics.tags.phase = phase;
+  if (phase !== currentPhase) {
+    exec.vu.metrics.tags.phase = phase;
+    currentPhase = phase;
+  }
   return phase;
 }
