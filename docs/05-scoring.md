@@ -6,11 +6,11 @@ This guide defines how raw k6 and monitoring results turn into a final score for
 python3 scoring/score.py results/<campaign-id>/results.csv
 ```
 
-**Test set:** 9 tests. Tests 1–8 are single workloads; test 9 is the authenticated mixed workload ([02-test-spec.md](02-test-spec.md)). An earlier draft had 10 tests: template rendering was removed, and "multiple queries" was replaced by "large result set".
+**Test set:** 8 tests, numbered 2–9. Tests 2–8 are single workloads; test 9 is the authenticated mixed workload ([02-test-spec.md](02-test-spec.md)). Test 1 (JSON hello) was removed on 2026-10-11 (highest request rate, least realistic); the numbers were kept. An earlier draft had 10 tests: template rendering was removed, and "multiple queries" was replaced by "large result set".
 
 **Setup used for all results:**
 
-- **Hardware:** one config only, 8 dedicated CPU cores / 32 GB RAM (`m7a.2xlarge`). All stacks run on the same instance type.
+- **Hardware:** one config only, 4 dedicated CPU cores / 8 GB RAM (`c7a.xlarge`). All stacks run on the same instance type.
 - **Runs:** each test is run **once** per stack.
 - **Stacks:** one stack per language (for example NestJS for Node, Laravel for PHP). The stack's score is also its language's score.
 
@@ -61,7 +61,7 @@ The SLO numbers are fixed in `config/bench.toml` **before** the first run and us
 
 ## Step 2: Normalize each test to a score from 1 to 100
 
-Raw req/s can't be combined across tests (JSON hello might reach 200,000 req/s while the slow downstream test reaches 5,000). Score each stack relative to the best stack in that test:
+Raw req/s can't be combined across tests (a single-row read might reach 50,000 req/s while a write transaction reaches 5,000). Score each stack relative to the best stack in that test:
 
 ```
 S(stack, test) = 100 × R(stack, test) / max over all stacks of R(stack, test)
@@ -77,12 +77,12 @@ Why 1 and not 0: the geometric mean in Step 3 multiplies scores, so a single 0 w
 
 ## Step 3: Combine tests
 
-### 3.1 Composite throughput score (tests 1–8)
+### 3.1 Composite throughput score (tests 2–8)
 
 The **geometric mean** of the test scores:
 
 ```
-Composite(stack) = ( S1 × S2 × ... × S8 ) ^ (1/8)
+Composite(stack) = ( S2 × S3 × ... × S8 ) ^ (1/7)
 ```
 
 Equivalent form, easier to compute and extend with weights:
@@ -114,10 +114,11 @@ Same formula (geometric mean), over a subset of tests:
 
 | Category | Tests |
 |---|---|
-| Raw speed | 1, 7, 8 |
 | Database | 2, 3, 4, 5 |
 | Concurrency and waiting | 6 |
 | CPU | 7, 8 |
+
+"Raw speed" (tests 1, 7, 8) was dropped with test 1: without it, it would be identical to CPU.
 
 These scores drive the "category winners" segment of the video.
 
@@ -182,7 +183,7 @@ Overall(stack) = exp( Σ wₖ × ln(Componentₖ) / Σ wₖ )
 | Component | Default weight | Reason |
 |---|---|---|
 | Mixed workload | 0.35 | Closest to a real app |
-| Composite (tests 1–8) | 0.35 | Breadth across workloads |
+| Composite (tests 2–8) | 0.35 | Breadth across workloads |
 | Latency | 0.15 | User-facing responsiveness |
 | Memory | 0.15 | Determines how many instances fit on one host |
 
@@ -224,28 +225,30 @@ Overall = exp( (0.35·ln 80 + 0.35·ln 96.9 + 0.15·ln 90 + 0.15·ln 50) / 1.0 )
 
 - **Within 5% = tie.** With a single run per test there is no measured run-to-run spread, so any difference under 5% is treated as noise. Such results are shown as ties rather than ranking one stack above the other.
 - **Scores are relative.** A score of 50 means "half the best stack," not "50% good." Adding or removing a stack can change everyone's scores, so the full list of stacks is published with the results.
-- **DB-bound results:** if several stacks reach the measured Postgres ceiling, their scores in tests 2–5 converge. This is noted in the video instead of being presented as a tie between languages.
+- **DB-bound results:** the db host is deliberately small, so in the DB tests fast stacks can reach the Postgres ceiling. Those results are flagged `db_bound` and listed as DB-limited by `score.py`; their scores converge. This is shown in the charts and noted in the video instead of being presented as a tie between languages.
 
 ---
 
 ## Input format (`results.csv`)
 
 ```
-stack,language,test,max_rps,status,p99_common_ms,peak_rss_mb
-gin,go,2,61200,ok,,
-gin,go,9,30150,ok,41.2,118
-laravel,php,6,,slo_fail,,
+stack,language,test,max_rps,status,p99_common_ms,peak_rss_mb,db_bound
+gin,go,2,61200,ok,,,0
+gin,go,3,7100,ok,,,1
+gin,go,9,30150,ok,41.2,118,0
+laravel,php,6,,slo_fail,,,0
 ```
 
-`p99_common_ms` and `peak_rss_mb` are only filled for test 9 rows. The runner writes this file. A tiny sample is in `scoring/example-results.csv`.
+`p99_common_ms` and `peak_rss_mb` are only filled for test 9 rows. `db_bound = 1` marks a result whose final passing step had db CPU ≥ 70%: it is scored as measured and listed as DB-limited (column optional; older files without it still score). The runner writes this file. A tiny sample is in `scoring/example-results.csv`.
 
 ---
 
 ## Checklist before publishing results
 
 - [ ] SLO thresholds, failure score, and weights were fixed before the first run (git tag `methodology-v1`)
-- [ ] Every stack has one valid result for each of tests 1–9
-- [ ] All tests ran on the same 8-core / 32 GB dedicated-CPU instance type, under identical conditions
+- [ ] Every stack has one valid result for each of tests 2–9
+- [ ] All tests ran on the same 4-core / 8 GB dedicated-CPU instance type, under identical conditions
+- [ ] DB-limited results (`db_bound`) are marked in the charts of tests 2–5 and 9, with the calibrated DB ceiling shown
 - [ ] No run had dropped k6 iterations or exceeded network allowances
 - [ ] Failures are marked in every chart, not shown as zero
 - [ ] Each language score names the stack it came from

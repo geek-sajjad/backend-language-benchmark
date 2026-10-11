@@ -88,15 +88,7 @@ Building it doesn't count toward any measurement. It happens before the readines
 
 **Error bodies** are JSON. Conformance checks only the status code: 404 `{"error":"not_found"}`, 422 `{"error":"validation_failed","details":…}`, 401 `{"error":"unauthorized"}`, 403 `{"error":"forbidden"}`. A malformed path or query parameter (for example a non-numeric id) is a 400 and is never sent by k6.
 
-### 1 · JSON hello: `GET /json`
-
-```json
-{"message":"Hello, World!"}
-```
-
-`Content-Type: application/json`. The object is serialized per request: no caching and no pre-rendered bytes.
-
-**k6:** constant-arrival-rate on one URL.
+**Test numbering:** tests run from 2 to 9. Test 1 (JSON hello, `GET /json`) was **removed** on 2026-10-11: it needed by far the highest request rate (and so the biggest load generator) while saying little about real apps, since framework overhead also shows in test 2. The other tests keep their numbers so scripts, configs and results stay stable.
 
 ### 2 · Single read: `GET /products/{id}`
 
@@ -106,7 +98,7 @@ One `SELECT` by primary key through the ORM. Returns the product as JSON (all co
 
 ### 3 · Large result set: `GET /categories/{id}/products?after={after_id}`
 
-Returns **one page of 100 products** in a category using keyset pagination: `category_id = id AND products.id > after_id ORDER BY id LIMIT 100`. This is **one query** that loads **full ORM entities** (all columns, no column projection or raw SQL). The ORM then builds 100 objects, which are mapped to the response shape and serialized:
+Returns **one page of 50 products** in a category using keyset pagination: `category_id = id AND products.id > after_id ORDER BY id LIMIT 50`. This is **one query** that loads **full ORM entities** (all columns, no column projection or raw SQL). The ORM then builds 50 objects, which are mapped to the response shape and serialized:
 
 ```json
 {"category_id": 7, "next_after": 23456, "items": [
@@ -114,11 +106,11 @@ Returns **one page of 100 products** in a category using keyset pagination: `cat
 ]}
 ```
 
-`description` is loaded with the entity but **not** returned, which keeps the response at about 12 KB. `next_after` is the id of the last item (`null` if the page is empty). A missing `after` means 0.
+`description` is loaded with the entity but **not** returned, which keeps the response at about 6.7 KB. `next_after` is the id of the last item (`null` if the page is empty). A missing `after` means 0.
 
-The cost is dominated by **ORM row hydration** (turning rows into objects) and serialization, not by the database: a single indexed range scan is cheap for Postgres. ORM read-only hints that the framework docs recommend for read endpoints are allowed and listed in the stack README, for example EF Core `AsNoTracking()` and Hibernate's read-only query hint.
+The test targets **ORM row hydration** (turning rows into objects) and serialization. Postgres's own cost is not small, though: the db-sizing test measured about 620 µs of Postgres CPU per 100-row page (mostly per-row output), which capped a 4-core db at ~7.1k pages/s. The page was therefore cut from 100 to 50 rows (2026-10-11). pgbench on the same SQL ran 50-row pages at 1.93× the rate of 100-row pages (local Postgres 18, 16 clients), so the 4-core db should reach about 13.7k pages/s (calibration confirms it), with half the db → app traffic. 50 full entities per request still make hydration the main app-side cost. ORM read-only hints that the framework docs recommend for read endpoints are allowed and listed in the stack README, for example EF Core `AsNoTracking()` and Hibernate's read-only query hint.
 
-**k6:** category uniform random in 1..50, `after` uniform random in 0..90,000. That always leaves ≥ 100 matching rows, because each category has 2,000 products spread evenly over the id range. At 20k req/s that is about 2 Gbps outbound, inside the network baseline. The `ethtool` check guards it.
+**k6:** category uniform random in 1..50, `after` uniform random in 0..90,000. That always leaves ≥ 50 matching rows, because each category has 2,000 products spread evenly over the id range. Db → app is about 10 KB per page (half of the 20.3 KB measured for 100 rows), so the db's ~13k pages/s ceiling is about 1.1 Gbps, inside the 1.56 Gbps baseline. The `ethtool` check guards it.
 
 ### 4 · List with join: `GET /customers/{id}/orders`
 
@@ -163,7 +155,7 @@ The request is almost all waiting. Throughput is therefore set by **how many req
 
 ### 7 · Heavy JSON: `POST /transform`
 
-- **Request:** a ~12 KB JSON cart export of 45 line items, each with nested `product {id, name, category, attributes{…}}`, `pricing {unit, currency, discounts[]}` and `quantity`. k6 picks from 200 pre-generated payloads in `k6/data/transform/` (loaded through `SharedArray`), written by `conformance/reference/gen_transform_payloads.py` from splitmix64 seed `0x5EED_BE7C_0007`.
+- **Request:** a ~4 KB JSON cart export of 15 line items, each with nested `product {id, name, category, attributes{…}}`, `pricing {unit, currency, discounts[]}` and `quantity`. k6 picks from 200 pre-generated payloads in `k6/data/transform/` (loaded through `SharedArray`), written by `conformance/reference/gen_transform_payloads.py` from splitmix64 seed `0x5EED_BE7C_0007`.
   ```json
   {"cart_id": "cart-0001", "currency": "USD", "items": [
     {"line_id": 1, "quantity": 2,
@@ -178,15 +170,15 @@ The request is almost all waiting. Throughput is therefore set by **how many req
   3. Group by `product.category`, with count, subtotal and the top 3 items by line total (ties: lower `line_id` first).
   4. Normalize every item name: trim, lowercase, collapse whitespace runs to one space. Names are ASCII.
   5. Serialize the result. Categories are sorted by subtotal desc, then name asc.
-- **Response:** about 3.6 KB.
+- **Response:** about 1.9 KB.
   ```json
-  {"cart_id": "cart-0001", "currency": "USD", "item_count": 45, "total_cents": 11497476, "categories": [
-    {"category": "Electronics", "count": 5, "subtotal_cents": 2082397, "top_items": [
-      {"line_id": 39, "product_id": 37154, "name": "ultra monitor no.37154", "total_cents": 795537}]}
+  {"cart_id": "cart-0001", "currency": "USD", "item_count": 15, "total_cents": 3052009, "categories": [
+    {"category": "Electronics", "count": 3, "subtotal_cents": 1177156, "top_items": [
+      {"line_id": 5, "product_id": 8964, "name": "pro blender no.8964", "total_cents": 572376}]}
   ]}
   ```
 
-At 20k req/s that is about 2 Gbps inbound, inside the network baseline. (45 items instead of the originally planned 60 keep the request at the ~12 KB this estimate assumes.)
+The payload is sized for the 4-core app host's network baseline (~1.56 Gbps): 4 KB at 40k req/s is about 1.3 Gbps inbound. It was 45 items (~12 KB) when the app host had 8 cores and a 3.1 Gbps baseline; at 12 KB the 4-core host would hit its network limit at ~16k req/s, below what the fast stacks reach. 15 items still exercise nested parsing, discounts, grouping, sorting and name normalization on every request.
 
 ### 8 · In-memory aggregation: `GET /aggregate?region={r}&min_amount={m}`
 
@@ -234,7 +226,7 @@ An average session is **4.65 requests**. The resulting request mix:
 | 7 Heavy JSON | 4% |
 | 8 Aggregation | 3% |
 
-Test 1 is excluded because it isn't real traffic. The SLO applies to all requests together. Per-endpoint and per-journey latency is also recorded for analysis.
+(Test 1, JSON hello, was removed from the plan; it was never part of this mix because it isn't real traffic.) The SLO applies to all requests together. Per-endpoint and per-journey latency is also recorded for analysis.
 
 **Rate and `max_rps`:** k6 offers a constant rate of **sessions** (`constant-arrival-rate`, one iteration = one session). The runner converts the search rate: `sessions/s = req/s ÷ 4.65`. The recorded `max_rps` is the **measured request rate** (`http_reqs` per second over the measure window) at the highest passing step, so test 9 stays in req/s like every other test. `L_common` is converted the same way.
 

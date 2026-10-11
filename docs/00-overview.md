@@ -4,11 +4,11 @@
 
 Answer one question for the video, with numbers anyone can reproduce:
 
-> On the same 8-core / 32 GB server, using the stack a typical team would actually pick for a new production API, how much traffic can each backend language serve within a fixed latency SLO, and how much memory does it use doing it?
+> On the same 4-core / 8 GB server, using the stack a typical team would actually pick for a new production API, how much traffic can each backend language serve within a fixed latency SLO, and how much memory does it use doing it?
 
 Each language's results come from:
 
-- the **max req/s under the SLO** for each of the nine workloads
+- the **max req/s under the SLO** for each of the eight workloads
 - the **p99 latency at a common load** (test 9)
 - the **peak memory (RSS)** under load (test 9)
 

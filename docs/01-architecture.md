@@ -11,12 +11,13 @@
  │   │ loadgen          │ ──────► │ app           │ ───────► │ db               │   │
  │   │ k6 + runner      │         │ 1 stack at a  │          │ Postgres 18      │   │
  │   │ + Prometheus     │         │ time (Docker) │   HTTP   │ + downstream     │   │
- │   │ + Grafana        │         │ m7a.2xlarge   │ ───────► │   mock (test 6)  │   │
- │   │ c7a.4xlarge      │         │ 8 cores/32GiB │          │ c7a.4xlarge      │   │
+ │   │ (+ Grafana *)    │         │ c7a.xlarge    │ ───────► │   mock (test 6)  │   │
+ │   │ c7g.4xlarge arm64│         │ 4 cores/8GiB  │          │ c7a.xlarge 4c/8G │   │
  │   └───────┬──────────┘         └───────▲───────┘          └────────▲─────────┘   │
  │           │                            │                           │             │
  │           └──────── scrape (1 s) ──────┴───────────────────────────┘             │
  └──────────────────────────────────────────────────────────────────────────────────┘
+ * Grafana is stopped during calibration, the pilot and the scored campaign (see Monitoring)
 ```
 
 ## Network: deliberately minimal
@@ -36,20 +37,22 @@ A benchmark lab lives for a few days and holds no sensitive data, so the network
 
 | Role | Instance | vCPU / RAM | Why |
 |---|---|---|---|
-| **app** | `m7a.2xlarge` | 8 / 32 GiB | Matches the required 8 cores / 32 GB exactly. On AMD 7th-gen (`*7a`), **each vCPU is a full physical core with no SMT**, so "8 cores" really means 8 cores. Intel `m7i.2xlarge` would give 4 cores with hyperthreading. This is the one host whose size the results depend on, so it never shrinks. |
-| **db** | `c7a.4xlarge` | 16 / 32 GiB | 2× the app's cores. The dataset (~0.5 GB) fits fully in `shared_buffers` and OS cache, so the extra RAM of `m7a` buys nothing. Also runs the Go **downstream mock** for test 6: in test 6 Postgres is idle, and in test 9 the mock handles only ~14% of requests, mostly sleeping. The db CPU < 70% check covers both. Calibration ([04](04-methodology.md#proving-postgres-is-not-the-bottleneck)) must prove headroom. If it doesn't, go to `c7a.8xlarge`. |
-| **loadgen** | `c7a.4xlarge` | 16 / 32 GiB | Runs k6, the runner, **and Prometheus + Grafana**. Monitoring is pinned to 2 cores (`cpuset: "14-15"`) and k6 to the other 14 (`taskset -c 0-13`), so a Grafana viewer burst can't take CPU from k6 mid-step. Calibration measures k6's ceiling *with monitoring running*. If the best expected test 1 rate is above 70% of that ceiling, resize this host to `c7a.8xlarge` before the scored run (stop → change type → start; the app host is untouched). One bigger loadgen is preferred over splitting across hosts ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)). |
+| **app** | `c7a.xlarge` | 4 / 8 GiB | The hardware rule: 4 cores / 8 GB, chosen to keep the whole lab cheap (a smaller app also needs smaller db and loadgen hosts). On AMD 7th-gen (`*7a`), **each vCPU is a full physical core with no SMT**, so "4 cores" really means 4 cores. Intel `c7i.xlarge` would give 2 cores with hyperthreading. This is the one host whose size the results depend on, so it never changes within a campaign. |
+| **db** | `c7a.xlarge` | 4 / 8 GiB | Same size as the app, on purpose: **the db is allowed to be the bottleneck** in the database tests, and the results say so ([04](04-methodology.md#when-postgres-is-the-bottleneck)). The db-sizing test on this exact type ([results/db-sizing-2026-10](../results/db-sizing-2026-10/summary.md)) measured these Postgres ceilings: test 2 ≈ 130k, test 3 ≈ 7.1k (100-row page; ~13.7k expected now that the page is 50 rows), test 4 ≈ 15.1k, test 5 ≈ 9.0k req/s, so fast stacks will be DB-bound in tests 3–5 and 9. The dataset (~0.5 GB) fits fully in `shared_buffers`. Also runs the Go **downstream mock** for test 6: in test 6 Postgres is idle, and in test 9 the mock handles only ~14% of requests, mostly sleeping. |
+| **loadgen** | `c7g.4xlarge` (Graviton3, arm64) | 16 / 32 GiB | Runs k6, the runner **and Prometheus** (plus Grafana outside scored runs). **Graviton, because the loadgen isn't measured:** only its capacity matters, and on spot 16 Graviton cores cost less than 8 AMD cores (eu-north-1c on 2026-10-11: `c7g.4xlarge` $0.093/h, `c7a.2xlarge` $0.103/h, `c7a.4xlarge` $0.135/h). Each Graviton vCPU is a physical core (no SMT). `c` is already the family with the least RAM per core (2 GiB); no current family goes lower. k6, Prometheus, Grafana and the runner all ship for arm64. Monitoring is pinned to 2 cores (`cpuset: "14-15"`) and k6 to the other 14 (`taskset -c 0-13`). Calibration measures k6's ceiling *with monitoring running exactly as in the campaign*. If the best expected rate of any test is above 70% of that ceiling, resize this host to `c7g.8xlarge` before the scored run (stop → change type → start; the app host is untouched). One bigger loadgen is preferred over splitting across hosts ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)). |
 
 There is no separate monitoring or aux host. Prometheus scraping ~5 targets every second and k6's remote-write (now to `localhost`) use well under one core, which doesn't justify a fourth instance. Both stay off the measured app host.
 
-**Only the scored campaign needs this full set.** Stacks, k6 scripts and the runner are developed locally with Docker. Short dev sessions on AWS (debugging a stack on the real app host) can use spot instances. Calibration, pilot and the scored campaign run on on-demand instances so no host is reclaimed mid-campaign.
+**Only the scored campaign needs this full set.** Stacks, k6 scripts and the runner are developed locally with Docker.
 
-**Storage:** one gp3 root volume per host at the free baseline (3,000 IOPS, 125 MB/s), no extra data volumes. The ~0.5 GB dataset is served from RAM, so the disk only matters for WAL writes in tests 5 and 10. Postgres group commit batches those fsyncs. Calibration measures the write ceiling of test 5 ([04](04-methodology.md#proving-postgres-is-not-the-bottleneck)), and IOPS/throughput are raised **only if** that ceiling is too close to the best stack's rate.
+**All three hosts run on spot instances, for everything:** dev sessions, calibration, the pilot and the scored campaign (`use_spot = true`, persistent request, `stop` on interruption). An interruption never mixes hardware into the results: the runner pauses, keeps everything finished so far and continues only on identical hardware. The rules are in [06 · Spot interruptions](06-runner-and-results.md#spot-interruptions).
 
-**OS:** Ubuntu 24.04 LTS with the same AMI on every host (pin `ami_id` for the scored campaign). Kernel tuning is applied identically by `infra/host-setup/bootstrap.sh`:
+**Storage:** one gp3 root volume per host at the free baseline (3,000 IOPS, 125 MB/s), no extra data volumes. The ~0.5 GB dataset is served from RAM, so the disk only matters for WAL writes in tests 5 and 10. Postgres group commit batches those fsyncs. Calibration measures the write ceiling of test 5 ([04](04-methodology.md#when-postgres-is-the-bottleneck)). On the 4-core db host, CPU runs out before the disk (db-sizing test: 99% CPU at the test 5 ceiling), so IOPS/throughput are raised **only if** WAL fsync turns out to be the limit.
+
+**OS:** Ubuntu 24.04 LTS from the same Canonical release on every host: the amd64 image on app and db, the arm64 image on the Graviton loadgen (pin `ami_id` and `ami_id_arm64` for the scored campaign). Kernel tuning is applied identically by `infra/host-setup/bootstrap.sh`:
 `net.core.somaxconn=65535`, `net.ipv4.ip_local_port_range="1024 65535"`, `net.ipv4.tcp_tw_reuse=1`, `fs.file-max`, `fs.nr_open`, `nofile` ulimit 1,048,576, and `net.ipv4.ip_local_reserved_ports` for the service ports (3000, 5432, 8080, 8081, 9000, 9090, 9100, 9187), so an outgoing connection can never take a port a service is about to bind. Swap, `unattended-upgrades`, the `apt-daily` timers and the SSM agent are off, so no background job runs during a measurement.
 
-**Network checks:** before and after every measurement step, the runner records `ethtool -S ens5 | grep allowance_exceeded` on app, db and loadgen. Any increase makes the step invalid, because the network limit was hit and not the app's. `m7a.2xlarge` has a burstable network (baseline ≈ 3.1 Gbps). The payloads in tests 7 and 8 are sized to stay well below that ([02](02-test-spec.md)).
+**Network checks:** before and after every measurement step, the runner records `ethtool -S ens5 | grep allowance_exceeded` on app, db and loadgen. Any increase makes the step invalid, because the network limit was hit and not the app's. `c7a.xlarge` has a burstable network: **baseline ≈ 1.56 Gbps** (measured in the db-sizing test), bursts up to 12.5 Gbps while credits last. That is half of what the payloads were originally sized for, so test 7's request was cut from 12 KB to ~4 KB (about 1.3 Gbps at 40k req/s). Test 3's db → app traffic was 73% of the db's baseline at the db's ceiling with 100-row pages (measured); with 50-row pages it is about 10 KB per page, ~1.1 Gbps at the expected ~13k pages/s. See the network risk in [08](08-roadmap.md#risks).
 
 ## Software on each host
 
@@ -63,12 +66,13 @@ Why `network_mode: host`: Docker's bridge network and userland proxy add NAT and
 
 Why containers at all: they give reproducible builds, pinned runtime versions, a single `docker compose up` per stack, and per-container memory accounting through cgroups for the RSS metric.
 
-**Container limits on app:** no CPU limit (the stack gets all 8 cores). Memory limit is `30g`, so if the stack exceeds it the OOM is clearly attributed to the container (`status=oom`) and the host itself doesn't swap. Swap is disabled on every host.
+**Container limits on app:** no CPU limit (the stack gets all 4 cores). Memory limit is `7g` (leaves ~1 GB for the OS, `node_exporter` and `cAdvisor`), so if the stack exceeds it the OOM is clearly attributed to the container (`status=oom`) and the host itself doesn't swap. Swap is disabled on every host.
 
 ## Monitoring
 
 - **Prometheus** scrapes every 1 s during runs: `node_exporter` (CPU, network, memory and ENA allowance counters via `--collector.ethtool` on every host), `cAdvisor` (container RSS and CPU on app) and `postgres_exporter` (TPS, connections, locks, cache hit ratio). The memory score uses the app cgroup's `anon + shmem`, sampled by the runner ([04](04-methodology.md#test-9-extras-common-load-latency-and-memory)). Ports and queries: [monitoring/README.md](../monitoring/README.md).
 - k6 pushes live metrics with `--out experimental-prometheus-rw` for the Grafana dashboards shown in the video. **Scoring never uses these live metrics.** It uses k6's end-of-test summary JSON, which is exact.
+- **Grafana is stopped during calibration, the pilot and the scored campaign** (`docker compose stop grafana` on loadgen), so dashboard queries can't take CPU from k6. Prometheus keeps recording everything. Afterwards Grafana is started again to browse the recorded runs and capture the video clips from the stored data. During dev sessions it can stay on. During a scored run, progress is followed in the runner's console (tmux).
 - **Grafana** dashboards are provisioned from `monitoring/grafana/dashboards/`:
   - *Run overview:* offered vs achieved rate, p95/p99, errors, and dropped iterations for the current step
   - *App host:* CPU per core, container RSS, GC- and thread-related metrics where exposed
@@ -76,7 +80,7 @@ Why containers at all: they give reproducible builds, pinned runtime versions, a
 
 ## Public Grafana (live monitoring)
 
-Grafana on the loadgen host is reachable from the internet at `http://<loadgen-public-ip>:3000` (printed by `terraform output grafana_url`), so the runs can be watched live from anywhere.
+Grafana on the loadgen host is reachable from the internet at `http://<loadgen-public-ip>:3000` (printed by `terraform output grafana_url`) whenever it is running: during dev sessions and after the scored runs. It is stopped while they run (see above).
 
 | Setting | Value | Why |
 |---|---|---|
@@ -89,7 +93,7 @@ Grafana on the loadgen host is reachable from the internet at `http://<loadgen-p
 
 HTTPS is optional. To enable it, put Caddy in front of Grafana on 443 with an automatic Let's Encrypt certificate (`<ip>.sslip.io` works without owning a domain). That is a free container rather than a load balancer. Plain HTTP is acceptable here because the public view carries no credentials. Log in as admin through an SSH tunnel (`ssh -L 3000:localhost:3000 loadgen`) or over HTTPS, never over plain HTTP.
 
-Viewer traffic is measured too: the loadgen CPU < 70% validity check covers Prometheus and Grafana load, and the core pinning keeps it off k6's cores, so a burst of viewers can't silently slow the load generator.
+Grafana is off while anything is scored, so viewers can't affect a measurement. The loadgen CPU < 70% validity check still covers Prometheus, and the core pinning keeps it off k6's cores.
 
 ## Infrastructure as code
 

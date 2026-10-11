@@ -132,7 +132,7 @@ Comparing stacks that picked different options is unfair, and some options are w
 
 ### R7. Connect-per-request DB load can make a stack permanently invalid
 
-**Where:** [04 SLO table](04-methodology.md#slo-pass-criteria-for-one-measurement-step), [04 Proving Postgres is not the bottleneck](04-methodology.md#proving-postgres-is-not-the-bottleneck)
+**Where:** [04 SLO table](04-methodology.md#slo-pass-criteria-for-one-measurement-step), [04 When Postgres is the bottleneck](04-methodology.md#when-postgres-is-the-bottleneck)
 
 **Problem:** a stack that opens a new Postgres connection per request (the PHP default) makes Postgres start a new backend and run SCRAM authentication for every request. That cost lands on the db host. If it pushes db CPU over 70%, every step is **invalid**, and the rule "fix the setup and rerun" has no fix, because the behavior belongs to the stack. Calibration uses pgbench with 64 persistent clients, so it never measures this.
 

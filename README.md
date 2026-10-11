@@ -1,6 +1,6 @@
 # Backend Language Benchmark
 
-This repo benchmarks seven backend languages for a YouTube video. Each language runs one production-style stack. All stacks get the same hardware, the same database and the same nine workloads. Each one is scored with a published, reproducible formula.
+This repo benchmarks seven backend languages for a YouTube video. Each language runs one production-style stack. All stacks get the same hardware, the same database and the same eight workloads. Each one is scored with a published, reproducible formula.
 
 | Language | Stack (one per language) | Folder |
 |---|---|---|
@@ -14,19 +14,20 @@ This repo benchmarks seven backend languages for a YouTube video. Each language 
 
 [docs/03-tech-stacks.md](docs/03-tech-stacks.md) explains why each stack was chosen and which optimizations were deliberately left out.
 
-## The nine tests
+## The eight tests
 
 | # | Test | Type | Reveals |
 |---|---|---|---|
-| 1 | JSON hello | Baseline | Framework overhead |
 | 2 | Single read | I/O | Driver and pool efficiency |
-| 3 | Large result set | I/O + ORM hydration | Turning 100 rows into objects and JSON |
+| 3 | Large result set | I/O + ORM hydration | Turning 50 rows into objects and JSON |
 | 4 | List with join | I/O + serialization | Realistic read path |
 | 5 | Write transaction | I/O | Write path and validation |
 | 6 | Slow downstream call | I/O (waiting) | Concurrency model |
 | 7 | Heavy JSON | CPU (realistic) | Parsing and transformation |
 | 8 | In-memory aggregation | CPU (pure language) | Raw compute and GC |
 | 9 | Mixed workload: user sessions (JWT-authenticated) | Everything | Headline "real app" result |
+
+Tests are numbered 2–9: test 1 (JSON hello) was removed on 2026-10-11 and the numbers were kept so scripts, configs and results stay stable.
 
 [docs/02-test-spec.md](docs/02-test-spec.md) has the exact endpoint contracts.
 
@@ -38,7 +39,7 @@ This repo benchmarks seven backend languages for a YouTube video. Each language 
 | [01 Architecture](docs/01-architecture.md) | AWS layout (VPC, instances, placement), Docker, monitoring |
 | [02 Test spec](docs/02-test-spec.md) | Data model, seed data, endpoint contracts, k6 traffic per test |
 | [03 Tech stacks](docs/03-tech-stacks.md) | Stack choice per language, reasons, config rules, potential optimizations |
-| [04 Methodology](docs/04-methodology.md) | SLO, max-rate search, warm-up, fairness rules, validity checks, DB-not-bottleneck proof |
+| [04 Methodology](docs/04-methodology.md) | SLO, max-rate search, warm-up, fairness rules, validity checks, DB-bound results |
 | [05 Scoring](docs/05-scoring.md) | Scoring guide (normalization, geometric means, overall score) |
 | [06 Runner and results](docs/06-runner-and-results.md) | How the orchestration script works and how results are stored |
 | [07 Runbook](docs/07-runbook.md) | Step-by-step: provision, deploy, calibrate, run, score, tear down |

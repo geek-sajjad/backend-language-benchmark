@@ -11,7 +11,7 @@ All parameters below live in [`config/bench.toml`](../config/bench.toml) and are
 | Error rate | < 1% (non-2xx, timeouts, connection errors; expected 422s in test 5 don't count) | step fails (app) |
 | k6 `dropped_iterations` | = 0 | **run invalid**: the load generator couldn't keep up. Exception: if the step already fails p95, p99 or the error rate, dropped iterations only mean k6 ran out of VUs waiting on a slow app, so the step is a normal **fail** |
 | `ethtool` `*_allowance_exceeded` | no increase on app, db, loadgen | **run invalid**: network limit, not app |
-| db host CPU (Postgres + downstream mock) | < 70% average over the step | **run invalid**: DB/downstream headroom violated |
+| db host CPU (Postgres + downstream mock) | < 70% average over the step | Tests 2–5 and 9: **not invalid**, the step is flagged `db_bound` (the db may be the bottleneck, see [below](#when-postgres-is-the-bottleneck)). Tests 1, 6, 7, 8 (no Postgres work; test 6 uses the downstream mock): **run invalid**, downstream headroom violated |
 | loadgen host CPU (k6 + Prometheus + Grafana) | < 70% average over the step | **run invalid**: generator headroom violated |
 
 An invalid run gets the setup fixed and is rerun. It is never recorded as a failure of the stack.
@@ -131,7 +131,7 @@ A crash or OOM at a higher step still records the last passing rate as `max_rps`
 2. `L_common = 0.8 × min(max_rps of stacks that passed test 9)`. Test 9 offers load as sessions/s, so the runner divides by 4.65 requests per session ([02](02-test-spec.md#9--mixed-workload-user-sessions-authenticated)).
 3. For each stack: restart, reset the DB, smoke, warm up, then run **120 s at `L_common`**. Record:
    - `p99_common_ms`: k6 p99 over the 120 s
-   - `peak_rss_mb`: the peak of **`anon + shmem`** from the app container's cgroup `memory.stat`, sampled every 1 s on the app host ([09 R2](09-review-findings.md#r2-the-memory-metric-probably-misses-shared-memory)). cgroup accounting counts each page once, so this covers 8 Node workers, 8 Uvicorn workers or all FPM children plus Nginx without double counting shared pages, and it includes shared memory such as PHP's OPcache segment. cAdvisor's `container_memory_rss` is the cgroup's `anon` only (verified: no shmem series on cgroup v2); it is recorded next to it as a cross-check. A stack must run as one container (`app`).
+   - `peak_rss_mb`: the peak of **`anon + shmem`** from the app container's cgroup `memory.stat`, sampled every 1 s on the app host ([09 R2](09-review-findings.md#r2-the-memory-metric-probably-misses-shared-memory)). cgroup accounting counts each page once, so this covers 4 Node workers, 4 Uvicorn workers or all FPM children plus Nginx without double counting shared pages, and it includes shared memory such as PHP's OPcache segment. cAdvisor's `container_memory_rss` is the cgroup's `anon` only (verified: no shmem series on cgroup v2); it is recorded next to it as a cross-check. A stack must run as one container (`app`).
 
 > **Decision note:** the scoring guide says "peak RSS under load during test 9". Measuring RSS at the **common load** compares every stack doing the same amount of work. Measuring it at each stack's own max rate would penalize fast stacks for carrying more traffic. The peak RSS during the max-rate search is also recorded as `peak_rss_search_mb` for transparency. See [open decisions](08-roadmap.md#open-decisions).
 
@@ -139,26 +139,30 @@ A crash or OOM at a higher step still records the last passing rate as `max_rps`
 
 - Exactly one stack runs on the app host at a time. Nothing else runs there apart from `node_exporter` and `cAdvisor`, which are identical for every stack.
 - Same AMI, kernel, sysctls, Docker version and instance type for every stack. Every stack runs inside one Terraform-provisioned environment in one campaign, so no stack gets a different physical host from a re-provision mid-campaign. If a re-provision is forced, **all** stacks are rerun.
+- All hosts are spot instances. A spot interruption pauses the campaign; it continues only on the same instance type and CPU model, and if the app host moved, the whole current test is rerun for every stack, so within one test all stacks share one physical machine ([06](06-runner-and-results.md#spot-interruptions)).
 - Stack run order is randomized per test (the seed is recorded in the manifest) so time-of-day or neighbor effects don't consistently favor one stack.
 - Identical smoke, warm-up, probe, step duration, recovery rules and payload sets.
 - The conformance suite passes for every stack at the exact commit that gets benchmarked.
 
-## Proving Postgres is not the bottleneck
+## When Postgres is the bottleneck
 
-Before the campaign, the runner's `calibrate` command measures the **DB ceiling** for tests 2–5. It runs the exact SQL each test produces through `pgbench` custom scripts with prepared statements, at 64 clients, from the loadgen host. That gives the maximum the database itself can serve over this network.
+The db host is the same size as the app (4 cores / 8 GB), to keep the lab cheap. **Postgres is allowed to be the bottleneck** in the database tests (2–5 and 9), and the results say so instead of hiding it. In production the database is usually the wall too.
 
-| Requirement | Action if violated |
+Before the campaign, the runner's `calibrate` command measures the **DB ceiling** for tests 2–5. It runs the exact SQL each test produces through `pgbench` custom scripts with prepared statements, at 64 clients, from the loadgen host. That gives the maximum the database itself can serve over this network. The db-sizing test measured on this host type: test 2 ≈ 130k, test 3 ≈ 7.1k (with the old 100-row page; ~13.7k expected with 50 rows, from a local pgbench ratio of 1.93×), test 4 ≈ 15.1k, test 5 ≈ 9.0k req/s ([results/db-sizing-2026-10](../results/db-sizing-2026-10/summary.md)).
+
+| Rule | What happens |
 |---|---|
-| DB ceiling ≥ 1.5 × the best stack's `max_rps` in that test | Upsize db host (`c7a.8xlarge`) and rerun calibration |
-| db CPU < 70% during every measured step | Step is invalid; upsize |
-| No lock waits above 1% of time (`pg_stat_activity`), WAL fsync not saturated | Investigate; raise gp3 IOPS/throughput above the free baseline only if WAL fsync is the limit |
+| db CPU ≥ 70% during a measured step (tests 2–5, 9) | The step is **valid** and flagged `db_bound`. A result whose final `max_rps` step is `db_bound` is reported as **"DB-limited"**: the stack reached at least that rate, and the database stopped it there. |
+| Scoring | Unchanged: the measured `max_rps` is scored as it is. DB-limited stacks naturally land close together, and the 5% tie rule applies as usual. |
+| Charts and video | Each DB test's chart shows the calibrated DB ceiling as a line and marks DB-limited stacks. The video states which tests were DB-bound and for which stacks. |
+| Lock waits above 1% of time (`pg_stat_activity`), WAL fsync saturated | Investigate; raise gp3 IOPS/throughput above the free baseline only if WAL fsync is the limit. CPU is the expected limit, not the disk. |
 
-If several stacks still converge near the ceiling, the guide's "DB-bound" note goes into the video.
+Stacks below the DB ceiling are still measured cleanly: for them the app is the limit, exactly as before.
 
 ## Proving the load generator is not the bottleneck
 
-- `calibrate` also runs test 1 against a trivial C/Rust echo server on the app host to measure **k6's own max rate** on the chosen loadgen size, with Prometheus, Grafana and remote-write running exactly as in the campaign.
-- If any stack's test needs more than 70% of that ceiling, first resize the loadgen to `c7a.8xlarge` and recalibrate. Only if that isn't enough, go to a bigger single loadgen (`c7a.16xlarge`). Splitting across several loadgen hosts is **not implemented**: one host keeps the end-of-test summary exact ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)).
+- `calibrate` also runs the echo script (`00-echo.js`, one GET per iteration) against a trivial echo server on the app host to measure **k6's own max rate** on the chosen loadgen size, with Prometheus and remote-write running and Grafana stopped, exactly as in the campaign.
+- If any stack's test needs more than 70% of that ceiling, first resize the loadgen to `c7g.8xlarge` and recalibrate. Only if that isn't enough, go to a bigger single loadgen (`c7g.16xlarge`). Splitting across several loadgen hosts is **not implemented**: one host keeps the end-of-test summary exact ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)).
 - `dropped_iterations = 0` and loadgen CPU < 70% are validity checks on every step.
 
 ## Known limitations (stated in the video)
@@ -210,11 +214,11 @@ If several stacks still converge near the ceiling, the guide's "DB-bound" note g
 | | |
 |---|---|
 | What | How well each runtime turns extra CPU cores into extra throughput: **threads in one process** (Go, Java, .NET, Rust) vs **one process per core** (Node cluster, Uvicorn workers, PHP-FPM) |
-| How | Run the normal test 8 search (in-memory aggregation, pure CPU) a second time with the app limited to **1 core**: Docker `cpuset: "0"`, and `WORKERS=1` for multi-process stacks. Everything else stays identical. Then:<br>`scaling = max_rps(8 cores) ÷ (8 × max_rps(1 core))`<br>100% = perfect use of all 8 cores. Less means cores are lost to GC threads, lock contention, scheduler or process overhead. |
-| Why | The scored tests let every stack use all 8 cores, so they show *how fast* each one is on 8 cores, but not *how well it scales*. This metric makes the threads-vs-processes difference visible on its own. |
+| How | Run the normal test 8 search (in-memory aggregation, pure CPU) a second time with the app limited to **1 core**: Docker `cpuset: "0"`, and `WORKERS=1` for multi-process stacks. Everything else stays identical. Then:<br>`scaling = max_rps(4 cores) ÷ (4 × max_rps(1 core))`<br>100% = perfect use of all 4 cores. Less means cores are lost to GC threads, lock contention, scheduler or process overhead. |
+| Why | The scored tests let every stack use all 4 cores, so they show *how fast* each one is on 4 cores, but not *how well it scales*. This metric makes the threads-vs-processes difference visible on its own. |
 | Notes | Thread-based runtimes detect the 1-core limit by themselves (Go `GOMAXPROCS`, JVM, .NET and Tokio all read the cpuset). PHP-FPM keeps the same `pm.max_children`, so its processes just share the one core. DB pool size per process stays the same. Test 8 uses no DB, so pool sizing doesn't matter here. |
 | Cost | One extra search per stack, ~13 min each (~1.5 h per campaign) |
-| Open questions | Test 8 only, or also test 1 (framework overhead) and test 7 (JSON)? Add a 4-core point to draw a scaling curve (1 → 4 → 8)? |
+| Open questions | Test 8 only, or also test 7 (JSON)? Add a 2-core point to draw a scaling curve (1 → 2 → 4)? |
 
 ### Time and cost if all four are adopted
 
