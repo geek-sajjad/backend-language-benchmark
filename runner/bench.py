@@ -54,8 +54,8 @@ def cmd_check(ctx, args):
                 got = h.sh(f"sysctl -n {key}", check=False).strip()
                 report(f"{name}: {key}", got == want, f"= {got!r}")
             report(f"{name}: swap off", h.sh("swapon --noheadings", check=False).strip() == "")
-            report(f"{name}: ethtool {c.net_iface}",
-                   "allowance_exceeded" in h.sh(f"ethtool -S {c.net_iface} 2>&1", check=False))
+            report(f"{name}: ethtool {c.iface(name)}",
+                   "allowance_exceeded" in h.sh(f"ethtool -S {c.iface(name)} 2>&1", check=False))
     report("k6", "v" in k6_version(), k6_version())
     db = Database(c)
     try:

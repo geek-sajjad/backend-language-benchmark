@@ -46,7 +46,10 @@ class Cluster:
         self.mode = data.get("mode", "local")
         self.local = self.mode == "local"
         self.prometheus_url = data.get("prometheus_url", "http://127.0.0.1:9090")
-        self.net_iface = data.get("net_iface", "ens5")
+        # Interface names differ per instance family (ens5 on Graviton, enp39s0 on c7a with the
+        # Ubuntu 24.04 AMI), so each host's primary interface is detected unless hosts.toml pins one.
+        self.net_iface = data.get("net_iface", "auto")
+        self._ifaces = {}
         user = data.get("ssh_user", "ubuntu")
         repo = data.get("repo_dir", str(REPO))
         hosts = data.get("hosts", {})
@@ -61,13 +64,22 @@ class Cluster:
     def base_url(self):
         return f"http://{self.app.ip}:8080"
 
+    def iface(self, name):
+        """Primary network interface of a host (the one carrying the default route)."""
+        if self.net_iface != "auto":
+            return self.net_iface
+        if name not in self._ifaces:
+            out = self.hosts[name].sh("ip -o route get 1.1.1.1", check=False).split()
+            self._ifaces[name] = out[out.index("dev") + 1] if "dev" in out else "ens5"
+        return self._ifaces[name]
+
     def ethtool(self):
         """allowance_exceeded counters per host; empty in local mode (no ENA interface)."""
         if self.local:
             return {}
         out = {}
         for name, host in self.hosts.items():
-            text = host.sh(f"ethtool -S {self.net_iface} | grep allowance_exceeded || true", check=False)
+            text = host.sh(f"ethtool -S {self.iface(name)} | grep allowance_exceeded || true", check=False)
             out[name] = {k.strip(): int(v) for k, v in
                          (line.split(":", 1) for line in text.splitlines() if ":" in line)}
         return out

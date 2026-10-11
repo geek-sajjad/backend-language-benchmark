@@ -24,7 +24,6 @@ mode = "aws"
 ssh_user = "ubuntu"
 repo_dir = "/home/ubuntu/bench"
 prometheus_url = "http://127.0.0.1:9090"
-net_iface = "ens5"
 [hosts.app]
 private_ip = "10.42.0.10"
 [hosts.db]
@@ -32,6 +31,8 @@ private_ip = "10.42.0.11"
 [hosts.loadgen]
 private_ip = "10.42.0.12"
 ```
+
+The ethtool checks detect each host's primary interface (`ip route get`): it is `ens5` on Graviton but `enp39s0` on `c7a` with the Ubuntu 24.04 AMI. An optional `net_iface = "..."` pins one name for all hosts.
 
 Without that file the runner is in **local mode**: every role is this machine, commands run locally, k6 isn't pinned to cores, and the ethtool and host-CPU validity checks are skipped (they're meaningless when k6, the app and Postgres share one machine). Prometheus is optional locally; without it the recovery check reads CPU from `docker stats`. Local numbers are never published.
 

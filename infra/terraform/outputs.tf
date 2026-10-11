@@ -65,7 +65,6 @@ output "hosts_toml" {
     ssh_user = "ubuntu"
     repo_dir = "/home/ubuntu/bench"
     prometheus_url = "http://127.0.0.1:9090"
-    net_iface = "${local.net_iface}"
     [hosts.app]
     private_ip = "${aws_instance.host["app"].private_ip}"
     [hosts.db]
