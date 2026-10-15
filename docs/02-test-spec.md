@@ -125,7 +125,7 @@ Returns the customer's **10 most recent orders**. Each order includes its items,
 
 Orders are sorted by `created_at` desc, then `id` desc. Items within an order are sorted by `order_items.id`. A customer with no orders (or an unknown id) returns `"orders": []`.
 
-Use the ORM's idiomatic eager loading: a join, or a "load orders, then load items+products with one `IN` query" approach. **At most 3 queries per request. N+1 is forbidden** (conformance counts queries with `pg_stat_statements` in a dry run).
+Use the ORM's idiomatic eager loading: a join, or a "load orders, then load items+products with one `IN` query" approach. **At most 3 queries per request. N+1 is forbidden** (conformance counts queries with `pg_stat_statements` in a dry run; transaction control such as `BEGIN`/`ROLLBACK` is not counted, since some ORMs wrap every read in a transaction).
 
 **k6:** customer id uniform random in 1..100,000. Each customer has about 10 orders with about 4 items each, so a response is roughly 5–6 KB.
 

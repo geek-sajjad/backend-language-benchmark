@@ -104,14 +104,15 @@ Optimizations that change libraries or bypass the framework are listed for each 
 
 | Layer | Choice |
 |---|---|
-| Runtime | CPython 3.14 (standard GIL build) |
-| Framework | FastAPI with Pydantic v2 |
-| ORM / driver | SQLAlchemy 2.0 async ORM + `asyncpg` |
-| Validation / JSON | Pydantic v2 models (request and response) |
-| HTTP client | `httpx.AsyncClient` (shared, pool limits raised) |
-| Auth (test 9) | PyJWT (`pyjwt[crypto]`) in a FastAPI `Depends` on the `/secure` router |
-| Server | Uvicorn with `uvloop` + `httptools`, `--workers 4` |
+| Runtime | CPython 3.15 (3.15.0, pinned; standard GIL build) |
+| Framework | FastAPI 0.143 (Starlette 1.8) with Pydantic 2.14 |
+| ORM / driver | SQLAlchemy 2.1 async ORM + `asyncpg` |
+| Validation / JSON | Pydantic v2 models (request and response). Request models for test 5 use Pydantic strict mode (`"42"` is not an integer). Handlers declare return types, so FastAPI serializes through Pydantic's JSON serializer (its default path) |
+| HTTP client | `httpx.AsyncClient` (one per worker, `max_connections` and `max_keepalive_connections` raised from 100/20 to 1024) |
+| Auth (test 9) | PyJWT (`pyjwt[crypto]`) in a FastAPI `Depends` on the `/secure` routers (`HTTPBearer`) |
+| Server | Uvicorn with `uvloop` + `httptools`, one worker per core (`WEB_CONCURRENCY=$(nproc)`), no access log |
 | Process model | 4 worker processes × pool of 16 (64 total) |
+| Dependencies | `uv.lock` (uv 0.13), installed with `uv sync --frozen` |
 
 **Why:** FastAPI is now the most popular choice for new Python APIs and is async-first, which matters for tests 2–6. SQLAlchemy 2 is Python's dominant ORM, and asyncpg is its fastest async Postgres driver. The GIL limits each process to one core, so one Uvicorn worker per core (4) is the documented production setup. Django was considered; FastAPI won on "new API project in 2026" share and its native async.
 
@@ -119,7 +120,8 @@ Optimizations that change libraries or bypass the framework are listed for each 
 - `ORJSONResponse` or msgspec
 - Granian server or Gunicorn + uvicorn workers
 - Raw asyncpg queries
-- Free-threaded CPython 3.14t
+- Free-threaded CPython 3.15t
+- `gc.freeze()` after startup (keeps the sales dataset out of GC scans)
 - numpy or polars for test 8 (breaks the "pure language" rule)
 - PyPy
 

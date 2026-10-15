@@ -233,14 +233,18 @@ def check_reads():
 
 
 def check_query_count():
-    """At most 3 queries per test 4 request (N+1 is forbidden)."""
+    """At most 3 queries per test 4 request (N+1 is forbidden).
+
+    Transaction control (BEGIN/COMMIT/ROLLBACK) isn't counted: some ORMs wrap every read in a
+    transaction (SQLAlchemy's autobegin), which says nothing about N+1."""
     n = 20
     sql("SELECT pg_stat_statements_reset()")
     for cid in range(500, 500 + n):
         http("GET", f"/customers/{cid}/orders")
     calls = int(sql("""SELECT coalesce(sum(calls), 0) FROM pg_stat_statements
                        WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
-                         AND query NOT ILIKE '%pg_stat_statements%'"""))
+                         AND query NOT ILIKE '%pg_stat_statements%'
+                         AND query !~* '^\\s*(begin|start transaction|commit|end|rollback)\\M'"""))
     check("test 4 queries per request <= 3", 0 < calls <= 3 * n, f"{calls} statements for {n} requests")
 
 

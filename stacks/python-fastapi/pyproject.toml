@@ -1,0 +1,19 @@
+[project]
+name = "bench-python-fastapi"
+version = "1.0.0"
+description = "Benchmark stack: FastAPI + SQLAlchemy 2 (asyncpg) on Uvicorn workers"
+requires-python = "==3.15.*"
+dependencies = [
+    "fastapi==0.143.2",
+    "pydantic==2.14.1",
+    "sqlalchemy[asyncio]==2.1.4",
+    "asyncpg==0.32.0",
+    "uvicorn==0.54.0",
+    "uvloop==0.23.0",
+    "httptools==0.9.0",
+    "httpx==0.28.1",
+    "pyjwt[crypto]==2.15.1",
+]
+
+[tool.uv]
+package = false

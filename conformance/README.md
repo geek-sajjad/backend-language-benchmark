@@ -10,7 +10,7 @@ Every stack must pass this suite before it is benchmarked ([docs/02-test-spec.md
 
 Expected values for tests 2–5 come from SQL run through `psql` against the same database, so the checks stay valid after writes. Tests 6–8 come from the reference module.
 
-What is checked besides response bodies: 404s, every test 5 validation rule (422), that invalid orders write nothing, at most 3 queries per test 4 request (`pg_stat_statements`), exact stock after 30 parallel orders on one product, and the auth rules (401 for missing, malformed, wrongly signed, wrong `aud`/`iss`, expired, no `exp` and HS256-confusion tokens; 403 for another customer's orders; `/secure/orders` uses `sub`).
+What is checked besides response bodies: 404s, every test 5 validation rule (422), that invalid orders write nothing, at most 3 queries per test 4 request (`pg_stat_statements`, not counting `BEGIN`/`COMMIT`/`ROLLBACK`), exact stock after 30 parallel orders on one product, and the auth rules (401 for missing, malformed, wrongly signed, wrong `aud`/`iss`, expired, no `exp` and HS256-confusion tokens; 403 for another customer's orders; `/secure/orders` uses `sub`).
 
 ```bash
 pip install 'pyjwt[crypto]'          # plus psql on PATH
