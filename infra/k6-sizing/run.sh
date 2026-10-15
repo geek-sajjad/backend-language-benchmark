@@ -2,7 +2,7 @@
 # k6 sizing test: how many req/s k6 sustains per Graviton core, and what limits it.
 #   echo:    c7a.xlarge (4 cores), the Go downstream mock with DELAY_MS=0 (target, must not limit)
 #   loadgen: c7g.xlarge (4 Graviton cores), k6 on 1-4 cores (remote/matrix.py)
-# Fits the current 8-vCPU quota. Results: results/k6-sizing-2026-10/. Hosts self-destruct after
+# Fits the current 8-vCPU quota. Results: results/sizing/k6-2026-10/. Hosts self-destruct after
 # SELF_DESTRUCT_MIN; teardown.sh runs at the end (and on error).
 source "$(dirname "$0")/common.sh"
 trap 'log "error: tearing down"; teardown_instances' ERR

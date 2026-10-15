@@ -1,4 +1,4 @@
-# TEMPORARY k6 sizing test on Graviton (results/k6-sizing-2026-10). Sourced by the other scripts.
+# TEMPORARY k6 sizing test on Graviton (results/sizing/k6-2026-10). Sourced by the other scripts.
 # Everything lives in eu-north-1, tagged Project=k6-sizing, created with the AWS CLI only
 # (never touches infra/terraform/). Adapted from infra/db-sizing/common.sh.
 set -euo pipefail
@@ -20,7 +20,7 @@ SELF_DESTRUCT_MIN=120
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 STATE="$HERE/.state"
-RESULTS="$REPO/results/k6-sizing-2026-10"
+RESULTS="$REPO/results/sizing/k6-2026-10"
 mkdir -p "$STATE"
 
 log() { echo "[k6-sizing $(date +%T)] $*" >&2; }

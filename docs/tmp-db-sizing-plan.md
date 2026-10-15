@@ -69,8 +69,8 @@ Both sides count the same work: each `runner/pgbench/test{N}.sql` script is exac
 |---|---|
 | `common.sh` | Variables (region, AZ, subnet, tag, key name `db-sizing`), `ssh`/`scp` helpers, `launch <name> <type>`, `wait_ssh`, `teardown_instances`. |
 | `launch` behavior | Look up the AMI. Create the key pair, the security group `db-sizing` (SSH 22 from `$(curl -s https://checkip.amazonaws.com)/32`, all traffic from the group itself) and the cluster placement group `db-sizing`, reusing any that already exist. Then `run-instances` with: spot one-time, terminate on interruption, `--instance-initiated-shutdown-behavior terminate`, 20 GB gp3 root, public IP, tags, and user-data that runs `shutdown -h +60` and installs Docker + sysstat + ethtool. |
-| `phase1-rust.sh` | Phase 1 (below). Writes `results/db-sizing-2026-10/phase1/`. |
-| `phase2-pg.sh` | Phase 2 (below). Writes `results/db-sizing-2026-10/phase2/`. |
+| `phase1-rust.sh` | Phase 1 (below). Writes `results/sizing/db-2026-10/phase1/`. |
+| `phase2-pg.sh` | Phase 2 (below). Writes `results/sizing/db-2026-10/phase2/`. |
 | `teardown.sh` | Terminate every instance tagged `Project=db-sizing` and wait until they're `terminated`. Then delete the security group, key pair and placement group, and list what's left (must be nothing). Safe to run more than once. |
 
 ## Phase 1: Rust on 1× m7a.2xlarge (~30 min, ~$0.11)
@@ -151,7 +151,7 @@ Start only after every phase 1 instance is `terminated`, **and only after the us
 
 **Network limit for test 3:** `net_cap_tps = 1.562e9 / 8 / bytes_per_tx`. A 30 s run can ride on the burst allowance, so for test 3 use **`db_max = min(measured TPS, net_cap_tps)`**.
 
-## Comparison and decision (`results/db-sizing-2026-10/summary.md`)
+## Comparison and decision (`results/sizing/db-2026-10/summary.md`)
 
 The summary has one table row per test (2–5), with these columns:
 - `db_max_4c`: the best TPS at 64 or 128 clients, with the network limit applied for test 3

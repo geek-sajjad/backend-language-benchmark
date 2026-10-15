@@ -131,10 +131,10 @@ GRAFANA_PUBLIC="$(tf_get grafana_public_view)"
 rbash loadgen <<EOF
 set -euo pipefail
 cd $REMOTE_REPO
+export MONITORING_CPUSET=$(printf '%q' "${MONITORING_CPUSET:-14-15}")  # also pins the loadgen exporters
 docker compose -f monitoring/exporters/loadgen.yml up -d
 export GRAFANA_ADMIN_PASSWORD=$(printf '%q' "$GRAFANA_PW")
 export GRAFANA_PUBLIC_VIEW=$GRAFANA_PUBLIC
-export MONITORING_CPUSET=$(printf '%q' "${MONITORING_CPUSET:-14-15}")
 docker compose -f monitoring/compose.yml up -d
 EOF
 

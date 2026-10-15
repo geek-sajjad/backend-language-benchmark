@@ -1,6 +1,6 @@
 # infra/terraform
 
-The AWS lab from [docs/01-architecture.md](../../docs/01-architecture.md): one VPC (`10.42.0.0/16`), one public subnet (`10.42.0.0/24`) with an internet gateway (no NAT), one security group, an SSH key pair, a cluster placement group `bench` and three Ubuntu 24.04 hosts on the same AMI. Every resource is tagged `project = "lang-bench"`.
+The AWS lab from [docs/01-architecture.md](../../docs/01-architecture.md): one VPC (`10.42.0.0/16`), one public subnet (`10.42.0.0/24`) with an internet gateway (no NAT), one security group, an SSH key pair and three Ubuntu 24.04 hosts on the same AMI, all in one AZ. There is no cluster placement group: AWS rejects stop-on-interruption spot instances in one (`InvalidParameterCombination`), and the runner relies on stop ([docs/01](../../docs/01-architecture.md#network-deliberately-minimal)). Every resource is tagged `project = "lang-bench"`.
 
 | Role | Default type | Private IP |
 |---|---|---|
@@ -53,7 +53,7 @@ Terraform must be installed on the operator machine: the `infra/host-setup/` scr
 - **Resizing** (`terraform apply -var loadgen_type=c7g.8xlarge`) stops and starts only that instance in place. Its **public IP changes** (no Elastic IPs); private IPs never do. Re-run `../host-setup/deploy.sh` afterwards (it restarts the services and rewrites the targets; idempotent).
 - **Stale outputs:** after a stop/start outside Terraform (console, spot interruption), run `terraform apply -refresh-only` so `public_ips` and `grafana_url` are current.
 - **AMI and user_data changes are ignored** on existing instances (`lifecycle.ignore_changes`), so a new Ubuntu release or a cloud-init edit never replaces hosts mid-campaign. To apply one on purpose: `terraform apply -replace='aws_instance.host["app"]'` (and pin `ami_id` / `ami_id_arm64` so all hosts stay on the same image).
-- **Capacity:** a cluster placement group must fit all three instances in one AZ. `InsufficientInstanceCapacity` → retry later, try another `availability_zone`, or use a capacity reservation for the campaign window ([08 risks](../../docs/08-roadmap.md#risks)). The spot vCPU quota ("All Standard Spot Instance Requests", x86 and Graviton together) must cover 24 vCPU (40 with a `c7g.8xlarge` loadgen).
+- **Capacity:** all three instances must fit in one AZ. `InsufficientInstanceCapacity` (Terraform retries it silently for minutes; CloudTrail shows it) → retry later, try another `availability_zone`, or use a capacity reservation for the campaign window ([08 risks](../../docs/08-roadmap.md#risks)). The spot vCPU quota ("All Standard Spot Instance Requests", x86 and Graviton together) must cover 24 vCPU (40 with a `c7g.8xlarge` loadgen).
 - **Cost:** ≈ $0.24/h on spot for the three hosts plus public IPv4 and gp3 ([08 budget](../../docs/08-roadmap.md#budget-estimate-eu-north-1c-spot-2026-10-11-spot-prices-move-check-before-each-session)); spot prices move. Nothing here costs money once destroyed.
 
 ## Validate without AWS

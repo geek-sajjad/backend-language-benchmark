@@ -20,7 +20,7 @@ SELF_DESTRUCT_MIN=60
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 STATE="$HERE/.state"
-RESULTS="$REPO/results/db-sizing-2026-10"
+RESULTS="$REPO/results/sizing/db-2026-10"
 mkdir -p "$STATE"
 
 log() { echo "[db-sizing $(date +%T)] $*" >&2; }

@@ -9,7 +9,7 @@
 | **M2** | Seven stacks | `stacks/<name>/`: app, Dockerfile, `compose.yml`, `README.md` (versions, pool size, worker count, deviations) | All 7 pass conformance locally; versions pinned |
 | **M3** | Load scripts | `k6/lib/` (SLO thresholds from config, settle/measure scenarios, payload loading); `k6/tests/01…09`; payload generator for test 7; JWT key pair + token generator for test 9 | Each script runs locally against any stack |
 | **M4** | Runner | `runner/bench.py` (check, conformance, calibrate, run, resume, csv), Prometheus window queries, ethtool/docker checks, atomic result files, dry-run | Full dry run plus a real run against local compose |
-| **M5** | Infra + monitoring | Terraform (VPC, one public subnet, security group, placement group, 3 hosts), host-setup scripts, Prometheus config, 3 Grafana dashboards | `terraform apply` → `bench.py check` green |
+| **M5** | Infra + monitoring | Terraform (VPC, one public subnet, security group, 3 hosts), host-setup scripts, Prometheus config, 3 Grafana dashboards | `terraform apply` → `bench.py check` green |
 | **M6** | Manual calibration | `calibration.json` (written by hand from manual pgbench and k6 echo runs), sizing decisions. No pilot (decided 2026-10-11) | Headroom proven; methodology tagged `methodology-v1` |
 | **M7** | Scored campaign | `results/<campaign-id>/` complete, `scores.txt` | Publishing checklist done |
 | **M8** | Video assets | Charts (per test, categories, overall, memory, cost per req), Grafana clips, B-roll of the dashboards | Charts generated from `results.csv` with a script (`scoring/charts.py`; per-test charts with the DB ceiling exist, the category, overall, memory and cost charts don't yet) |
@@ -23,7 +23,7 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 | # | Decision | Recommendation | Alternative |
 |---|---|---|---|
 | D1 | PHP runtime | **PHP-FPM + Nginx** in the main round (most deployed; Laravel's documented default) | Laravel Octane (FrankenPHP). Viewers will ask for it, so it's a good candidate for a bonus segment |
-| D2 | Go stack | **Gin + GORM** (consistent "framework + ORM" rule) | stdlib `net/http` + `pgx` + `sqlc` (what many Go devs consider idiomatic) |
+| D2 | Go stack | **Decided 2026-10-14: Gin + GORM** (consistent "framework + ORM" rule); implemented in `stacks/go-gin` | stdlib `net/http` + `pgx` + `sqlc` (what many Go devs consider idiomatic) |
 | D3 | Peak RSS window | **At common load** (same work for every stack); also report the peak during the search | During the max-rate search, as the guide literally says |
 | D4 | AWS region | **eu-north-1** (cheapest spot for `c7a`/`m7a`/`c7g` as of 2026-10-10) | Any region with `m7a`/`c7a`/`c7g`; must not change mid-campaign |
 | D5 | "Tuned" bonus round | Plan for it after the main video, using each stack's "potential optimizations" | Skip |

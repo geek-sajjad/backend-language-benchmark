@@ -5,7 +5,7 @@
 ```
                      AWS region, one AZ · VPC 10.42.0.0/16 · one public subnet 10.42.0.0/24
  ┌──────────────────────────────────────────────────────────────────────────────────┐
- │  Internet gateway (free)              cluster placement group "bench" (free)     │
+ │  Internet gateway (free)                    all three hosts in the same AZ       │
  │                                                                                  │
  │   ┌──────────────────┐  HTTP   ┌───────────────┐   SQL    ┌──────────────────┐   │
  │   │ loadgen          │ ──────► │ app           │ ───────► │ db               │   │
@@ -30,7 +30,7 @@ A benchmark lab lives for a few days and holds no sensitive data, so the network
 | **Benchmark traffic uses private IPs only** | Same VPC, same AZ, private addresses: free data transfer and no internet path in the loop. The runner and every compose file are configured with private IPs. |
 | **Security group instead of network isolation** | Ingress: **Grafana (3000 on loadgen) from the internet**; SSH (22) **only from the operator's IP**; all benchmark ports (app, Postgres, downstream, Prometheus, exporters) only from the security group itself. |
 | **Plain SSH, no SSM / bastion / VPN** | The runner already uses SSH between hosts. |
-| **Cluster placement group** | Free, and gives low, consistent latency between hosts. It is the one network feature that matters for the results. |
+| **No cluster placement group** (decided 2026-10-13) | A cluster placement group would give the lowest, steadiest latency between hosts, but AWS rejects spot instances that **stop** on interruption inside one (`InvalidParameterCombination`), and the stop + resume rules in [06](06-runner-and-results.md#spot-interruptions) depend on stop. The hosts share one AZ and subnet instead. The app–db latency this adds is the same for every stack, and the pause/resume design is kept. |
 | **No load balancer, no Elastic IPs, no CloudWatch detailed monitoring** | Not needed. k6 talks to the app directly; Prometheus does the monitoring. |
 
 ## Instances
@@ -38,7 +38,7 @@ A benchmark lab lives for a few days and holds no sensitive data, so the network
 | Role | Instance | vCPU / RAM | Why |
 |---|---|---|---|
 | **app** | `c7a.xlarge` | 4 / 8 GiB | The hardware rule: 4 cores / 8 GB, chosen to keep the whole lab cheap (a smaller app also needs smaller db and loadgen hosts). On AMD 7th-gen (`*7a`), **each vCPU is a full physical core with no SMT**, so "4 cores" really means 4 cores. Intel `c7i.xlarge` would give 2 cores with hyperthreading. This is the one host whose size the results depend on, so it never changes within a campaign. |
-| **db** | `c7a.xlarge` | 4 / 8 GiB | Same size as the app, on purpose: **the db is allowed to be the bottleneck** in the database tests, and the results say so ([04](04-methodology.md#when-postgres-is-the-bottleneck)). The db-sizing test on this exact type ([results/db-sizing-2026-10](../results/db-sizing-2026-10/summary.md)) measured these Postgres ceilings: test 2 ≈ 130k, test 3 ≈ 7.1k (100-row page; ~13.7k expected now that the page is 50 rows), test 4 ≈ 15.1k, test 5 ≈ 9.0k req/s, so fast stacks will be DB-bound in tests 3–5 and 9. The dataset (~0.5 GB) fits fully in `shared_buffers`. Also runs the Go **downstream mock** for test 6: in test 6 Postgres is idle, and in test 9 the mock handles only ~14% of requests, mostly sleeping. |
+| **db** | `c7a.xlarge` | 4 / 8 GiB | Same size as the app, on purpose: **the db is allowed to be the bottleneck** in the database tests, and the results say so ([04](04-methodology.md#when-postgres-is-the-bottleneck)). The db-sizing test on this exact type ([results/sizing/db-2026-10](../results/sizing/db-2026-10/summary.md)) measured these Postgres ceilings: test 2 ≈ 130k, test 3 ≈ 7.1k (100-row page; ~13.7k expected now that the page is 50 rows), test 4 ≈ 15.1k, test 5 ≈ 9.0k req/s, so fast stacks will be DB-bound in tests 3–5 and 9. The dataset (~0.5 GB) fits fully in `shared_buffers`. Also runs the Go **downstream mock** for test 6: in test 6 Postgres is idle, and in test 9 the mock handles only ~14% of requests, mostly sleeping. |
 | **loadgen** | `c7g.4xlarge` (Graviton3, arm64) | 16 / 32 GiB | Runs k6, the runner **and Prometheus** (plus Grafana outside scored runs). **Graviton, because the loadgen isn't measured:** only its capacity matters, and on spot 16 Graviton cores cost less than 8 AMD cores (eu-north-1c on 2026-10-11: `c7g.4xlarge` $0.093/h, `c7a.2xlarge` $0.103/h, `c7a.4xlarge` $0.135/h). Each Graviton vCPU is a physical core (no SMT). `c` is already the family with the least RAM per core (2 GiB); no current family goes lower. k6, Prometheus, Grafana and the runner all ship for arm64. Monitoring is pinned to 2 cores (`cpuset: "14-15"`) and k6 to the other 14 (`taskset -c 0-13`), with Go's garbage collector off up to a 16 GiB memory limit ([04](04-methodology.md#proving-the-load-generator-is-not-the-bottleneck)). The manual calibration (done before the campaign session) measures k6's ceiling *with monitoring running exactly as in the campaign*. If the best expected rate of any test is above 70% of that ceiling, the campaign session is provisioned with `c7g.8xlarge` instead. One bigger loadgen is preferred over splitting across hosts ([09 R4](09-review-findings.md#r4-k6-json-output-cannot-run-at-high-request-rates)). |
 
 There is no separate monitoring or aux host. Prometheus scraping ~5 targets every second and k6's remote-write (now to `localhost`) use well under one core, which doesn't justify a fourth instance. Both stay off the measured app host.
@@ -97,6 +97,6 @@ Grafana is off while anything is scored, so viewers can't affect a measurement. 
 
 ## Infrastructure as code
 
-- `infra/terraform/`: VPC, one public subnet, internet gateway, one security group, SSH key pair, placement group and the three instances. Instance types, region, operator IP, `grafana_allowed_cidrs`, `grafana_public_view` and `use_spot` are variables. The Grafana admin password is a `random_password` resource.
+- `infra/terraform/`: VPC, one public subnet, internet gateway, one security group, SSH key pair and the three instances (no placement group, see Network). Instance types, region, operator IP, `grafana_allowed_cidrs`, `grafana_public_view` and `use_spot` are variables. The Grafana admin password is a `random_password` resource.
 - `infra/host-setup/`: cloud-init and idempotent scripts for Docker, sysctl, ulimits, exporters, Postgres config and seeding.
 - **Lifecycle:** `terraform apply` → run the campaign → `terraform destroy`. Nothing is kept running between sessions. Results are copied to this repo before destroying.

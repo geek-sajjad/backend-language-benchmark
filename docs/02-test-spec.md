@@ -2,7 +2,7 @@
 
 Every stack implements **exactly** this contract. The conformance suite (`conformance/`) calls each endpoint with fixed inputs and compares the responses to a reference (JSON compared semantically). A stack that fails conformance is not benchmarked.
 
-All apps listen on **port 8080**. They read config from environment variables: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_POOL_SIZE`, `DOWNSTREAM_URL`, `JWT_PUBLIC_KEY_FILE` and `WORKERS`.
+All apps listen on **port 8080**. They read config from environment variables: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_POOL_SIZE`, `DOWNSTREAM_URL` and `JWT_PUBLIC_KEY_FILE`. Every stack uses all cores of the app host; there is no worker-count variable.
 
 ---
 

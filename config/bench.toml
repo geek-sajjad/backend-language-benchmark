@@ -104,7 +104,7 @@ count = 1                  # prefer resizing the one loadgen (c7g.8xlarge) over 
 k6_cpuset = "0-13"         # Prometheus + Grafana pinned to 14-15 on the same host
 # Go GC for k6: off, collecting only near the memory limit. With the default GC, k6 dropped
 # iterations at 40-60% CPU from GC stalls; off: 0 drops and ~10% less CPU per request
-# (results/k6-sizing-2026-10). The limit leaves room for Prometheus on the 32 GiB loadgen.
+# (results/sizing/k6-2026-10). The limit leaves room for Prometheus on the 32 GiB loadgen.
 k6_gogc = "off"
 k6_gomemlimit = "16GiB"
 

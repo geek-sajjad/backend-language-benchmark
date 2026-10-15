@@ -67,7 +67,9 @@ k6 only includes a tagged submetric such as `http_reqs{scenario:measure}` in the
 
 ```
 results/
-  2026-11-02T0930Z-a1b2c3/              # campaign id = start time + git short sha
+  calibration.json                      # hand-written from the manual calibration
+  sizing/                               # one-off host sizing tests (db-2026-10, k6-2026-10), not campaigns
+  2026-11-02T0930Z-a1b2c3/              # campaign id = start time + git short sha (quick runs: quick-<name>)
     manifest.json                       # git sha, bench.toml copy+hash, instance types & IDs,
                                         # AMI, kernel, CPU model, Docker/k6/Postgres versions, stack image
                                         # digests, shuffle seed, calibration results

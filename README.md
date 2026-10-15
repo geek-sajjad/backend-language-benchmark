@@ -36,7 +36,7 @@ Tests are numbered 2–9: test 1 (JSON hello) was removed on 2026-10-11 and the 
 | Doc | What it covers |
 |---|---|
 | [00 Overview](docs/00-overview.md) | Goals, principles, what this benchmark does and does not claim |
-| [01 Architecture](docs/01-architecture.md) | AWS layout (VPC, instances, placement), Docker, monitoring |
+| [01 Architecture](docs/01-architecture.md) | AWS layout (VPC, instances), Docker, monitoring |
 | [02 Test spec](docs/02-test-spec.md) | Data model, seed data, endpoint contracts, k6 traffic per test |
 | [03 Tech stacks](docs/03-tech-stacks.md) | Stack choice per language, reasons, config rules, potential optimizations |
 | [04 Methodology](docs/04-methodology.md) | SLO, max-rate search, warm-up, fairness rules, validity checks, DB-bound results |
@@ -51,7 +51,7 @@ Tests are numbered 2–9: test 1 (JSON hello) was removed on 2026-10-11 and the 
 ```
 config/       bench.toml: SLO, search parameters, weights (frozen before first run)
 docs/         all project documentation
-infra/        Terraform (VPC, EC2, placement group) and host setup scripts
+infra/        Terraform (VPC, EC2) and host setup scripts
 db/           Postgres schema, deterministic seed, postgresql.conf
 downstream/   mock "slow downstream" HTTP service for test 6
 stacks/       one folder per language: app source, Dockerfile, compose file, stack notes
@@ -60,7 +60,7 @@ conformance/  correctness checks: every stack must return identical results befo
 monitoring/   Prometheus + Grafana configs and dashboards
 runner/       orchestration script: runs every test for every stack and saves results
 scoring/      score.py: turns results.csv into all published scores
-results/      one folder per campaign: raw k6 summaries, metrics, results.csv, manifest
+results/      one folder per campaign (results.csv, manifest, k6 summaries); sizing/ holds pre-campaign host sizing tests
 ```
 
 ## Quick start (once implemented)

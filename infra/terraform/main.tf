@@ -16,7 +16,7 @@ locals {
     arm64  = var.ami_id_arm64 != "" ? var.ami_id_arm64 : try(data.aws_ami.ubuntu["arm64"].id, "")
   }
 
-  # First AZ that offers all three instance types (cluster placement groups live in one AZ).
+  # First AZ that offers all three instance types (all hosts share one subnet, so one AZ).
   common_azs        = sort(tolist(setintersection([for o in data.aws_ec2_instance_type_offerings.by_type : toset(o.locations)]...)))
   availability_zone = var.availability_zone != "" ? var.availability_zone : try(local.common_azs[0], "")
 }
@@ -156,11 +156,6 @@ resource "aws_key_pair" "operator" {
   public_key = trimspace(file(pathexpand(var.ssh_public_key_path)))
 }
 
-resource "aws_placement_group" "bench" {
-  name     = "bench"
-  strategy = "cluster"
-}
-
 resource "random_password" "grafana_admin" {
   length  = 24
   special = false # passed through env/shell; alphanumeric avoids quoting issues
@@ -176,7 +171,6 @@ resource "aws_instance" "host" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.bench.id]
   key_name                    = aws_key_pair.operator.key_name
-  placement_group             = aws_placement_group.bench.id
   monitoring                  = false # no CloudWatch detailed monitoring
   ebs_optimized               = true
 
@@ -192,6 +186,8 @@ resource "aws_instance" "host" {
     content {
       market_type = "spot"
       spot_options {
+        # No cluster placement group: AWS rejects "stop" for spot instances in one
+        # (InvalidParameterCombination), and stop + resume is what docs/06 relies on.
         spot_instance_type             = "persistent"
         instance_interruption_behavior = "stop"
       }
