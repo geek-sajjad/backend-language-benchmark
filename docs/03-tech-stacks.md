@@ -155,14 +155,15 @@ Optimizations that change libraries or bypass the framework are listed for each 
 
 | Layer | Choice |
 |---|---|
-| Runtime | .NET 10 LTS, Server GC (default for ASP.NET Core), Dynamic PGO (default) |
+| Runtime | .NET 10 LTS (10.0.13, pinned), Server GC (default for ASP.NET Core), Dynamic PGO (default) |
 | Framework | ASP.NET Core Minimal APIs on Kestrel |
-| ORM / driver | Entity Framework Core 10 + Npgsql |
+| ORM / driver | Entity Framework Core 10 + Npgsql (`Npgsql.EntityFrameworkCore.PostgreSQL` 10), `EFCore.NamingConventions` for snake_case names; `AsNoTracking()` on read endpoints |
 | JSON | `System.Text.Json` (default) |
 | Validation | Built-in Minimal API validation (`AddValidation()`, .NET 10) with DataAnnotations |
 | HTTP client | `IHttpClientFactory` typed client (`SocketsHttpHandler` pooling) |
 | Auth (test 9) | `Microsoft.AspNetCore.Authentication.JwtBearer` + `RequireAuthorization()` on the route group |
-| Process model | One process, thread pool on 4 cores, pool of up to 64 |
+| Process model | One process, thread pool on 4 cores, Npgsql pool of 64 (`AddDbContext`, no context pooling) |
+| Production config | Logging at `Warning` (EF logs every command at Information). Strict JSON number handling (the web defaults read `"42"` as an integer) and 422 instead of 400 for unreadable bodies and validation failures (test 5 contract; approved 2026-10-15) |
 
 **Why:** ASP.NET Core with Minimal APIs is Microsoft's recommended template for new HTTP APIs, and EF Core is the default .NET ORM. Server GC and PGO are on by default, so no tuning is involved.
 
