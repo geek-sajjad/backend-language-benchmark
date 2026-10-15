@@ -26,12 +26,8 @@ pub struct AppState {
 }
 
 fn main() {
-    let mut runtime = tokio::runtime::Builder::new_multi_thread();
-    // Default is one worker thread per core; WORKERS only matters for the 1-core scaling run.
-    if let Some(workers) = env::var("WORKERS").ok().filter(|v| !v.is_empty()) {
-        runtime.worker_threads(workers.parse().expect("WORKERS must be a number"));
-    }
-    runtime
+    // One worker thread per core (Tokio's default).
+    tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .expect("failed to build Tokio runtime")

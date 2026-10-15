@@ -11,8 +11,8 @@ function envInt(key: string, fallback: number): number {
   return value;
 }
 
-/** Cluster workers: one per core by default; WORKERS only matters for the 1-core scaling run. */
-export const workers = envInt('WORKERS', availableParallelism());
+/** Cluster workers: one per core. */
+export const workers = availableParallelism();
 
 /** DB_POOL_SIZE is the stack's total, split evenly across the workers (64 total = 4 × 16). */
 export const poolPerWorker = Math.max(1, Math.floor(envInt('DB_POOL_SIZE', 64) / workers));

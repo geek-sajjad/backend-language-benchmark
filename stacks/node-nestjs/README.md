@@ -7,8 +7,8 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 | Item | Value |
 |---|---|
 | Pinned versions | Node.js 24.21.0 (`node:24.21.0-trixie-slim`, digest pinned in `Dockerfile`); NestJS 12.1.2 (`@nestjs/platform-fastify`, Fastify 5), TypeORM 1.1.2 + pg 8.23.1, class-validator 0.15.1, class-transformer 0.5.1, `@nestjs/passport` 12.0.0 + passport-jwt 4.0.1, TypeScript 7.0.2 (build only). Full tree in `package-lock.json`. |
-| Worker / process count | `node:cluster`: one primary + one worker per core (4 on the app host). `WORKERS` overrides it (only for the 1-core scaling run). |
-| DB pool size (total) | 64 (`DB_POOL_SIZE`), split evenly across workers: 16 per worker with 4 workers. To be tuned in calibration. |
+| Worker / process count | `node:cluster`: one primary + one worker per core (4 on the app host). |
+| DB pool size (total) | 64 (`DB_POOL_SIZE`), split evenly across workers: 16 per worker with 4 workers. Fixed for every stack (docs/03), not tuned. |
 | Runtime flags / env | `NODE_ENV=production`. No Node flags; default heap limits. |
 | Deviations from the spec | Test 5: `created_at` is set from the app clock (`new Date()`), not the DB's `now()`. See the note below. |
 
