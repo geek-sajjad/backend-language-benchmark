@@ -1,6 +1,6 @@
 # python-fastapi
 
-Status: **implemented**. Local conformance run: 117/118; the one failure was the test 4 query count, which counted SQLAlchemy's `BEGIN`/`ROLLBACK` (2 real queries per request). Conformance no longer counts transaction control; the full rerun is pending.
+Status: **implemented**, passes `conformance/check.py` locally (118/118, against a freshly reset DB).
 
 Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../../docs/03-tech-stacks.md).
 
