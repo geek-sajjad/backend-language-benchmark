@@ -1,0 +1,26 @@
+15:19:53 DB ceiling (pgbench, 64 clients, prepared statements)
+15:20:27   test 2: 128736.714215 req/s, db cpu 1.0
+15:20:57   test 3: 12813.956502 req/s, db cpu 1.0
+15:21:28   test 4: 14393.307959 req/s, db cpu 1.0
+15:21:58   test 5: 8701.006549 req/s, db cpu 0.9887500000000008
+15:22:02 load generator ceiling (echo server on the app host)
+15:22:18   echo     1000/s → ok (p99 0.15636, dropped 0, loadgen cpu 0.020000000000010232)
+15:22:28   echo     2000/s → ok (p99 0.1752704, dropped 0, loadgen cpu 0.02687500000000398)
+15:22:39   echo     4000/s → ok (p99 0.19146539999999987, dropped 0, loadgen cpu 0.04609375000003979)
+15:22:49   echo     8000/s → ok (p99 0.16493099, dropped 0, loadgen cpu 0.08093750000003297)
+15:23:00   echo    16000/s → ok (p99 0.18414070000000002, dropped 0, loadgen cpu 0.17734374999999147)
+15:23:10   echo    32000/s → ok (p99 0.2283924, dropped 0, loadgen cpu 0.34031250000003865)
+15:23:21   echo    64000/s → ok (p99 2.277381550000021, dropped 0, loadgen cpu 0.6550000000000153)
+15:23:33   echo   128000/s → limit (p99 364.67980375999923, dropped 137204, loadgen cpu 0.8806249999999949)
+15:23:44   echo    76814/s → limit (p99 6.478550900000003, dropped 1628, loadgen cpu 0.7407812499999693)
+15:23:44 downstream mock ceiling
+15:23:55   downstream     1000/s → ok (p99 51.160691, dropped 0, loadgen cpu 0.01609374999998181)
+15:24:05   downstream     2000/s → ok (p99 51.065529899999994, dropped 0, loadgen cpu 0.026249999999961915)
+15:24:16   downstream     4000/s → ok (p99 51.1469406, dropped 0, loadgen cpu 0.04953125000001535)
+15:24:26   downstream     8000/s → ok (p99 51.1416906, dropped 0, loadgen cpu 0.09312500000002899)
+15:24:37   downstream    16000/s → ok (p99 51.08270595, dropped 0, loadgen cpu 0.17953124999998238)
+15:24:48   downstream    32000/s → ok (p99 51.311700200000004, dropped 0, loadgen cpu 0.35062500000002217)
+15:24:58   downstream    64000/s → limit (p99 64.23148469999998, dropped 1727, loadgen cpu 0.6717187500000108)
+15:25:09   downstream    38407/s → ok (p99 54.24545300000002, dropped 0, loadgen cpu 0.4264062499999568)
+15:25:20   downstream    46089/s → limit (p99 56.634740599999986, dropped 79, loadgen cpu 0.5071874999999864)
+15:25:20 wrote /home/ubuntu/bench/results/calibration.json
