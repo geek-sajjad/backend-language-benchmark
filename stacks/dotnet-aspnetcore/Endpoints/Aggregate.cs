@@ -22,7 +22,7 @@ public static class Aggregate
     public static AggregateResult Run(int region, [FromQuery(Name = "min_amount")] int minAmount, [FromServices] Sale[] sales)
     {
         var groups = new Dictionary<int, SalesGroup>();
-        foreach (ref readonly var s in sales.AsSpan())
+        foreach (var s in sales)
         {
             if (s.Region != region || s.AmountCents < minAmount)
             {

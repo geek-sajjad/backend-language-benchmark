@@ -10,7 +10,7 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 | Worker / process count | One process; `GOMAXPROCS` at its default (one per core = 4). |
 | DB pool size (total) | 64 (`DB_POOL_SIZE`): `database/sql` `SetMaxOpenConns(64)` and `SetMaxIdleConns(64)`; fixed for every stack (docs/03), not tuned |
 | Runtime flags / env | `GIN_MODE=release` (set in the `Dockerfile`). Default `GOGC`, no `GOMEMLIMIT`. `CGO_ENABLED=0`, `-trimpath`. |
-| Deviations from the spec | Test 5: `created_at` is set from the app clock (GORM's `autoCreateTime`), not the DB's `now()`. See the note below. |
+| Deviations from the spec | none (test 5's `created_at` comes from the app clock, GORM's `autoCreateTime`, which docs/02 allows; see the note below) |
 
 ## Production config
 
@@ -37,7 +37,7 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 
 Startup order: JWT key → sales dataset → DB pool (GORM pings on open; retries up to 60 s) → listen on `:8080`. `/health` answers only once all three are ready.
 
-**`created_at` from the app clock:** GORM fills a `CreatedAt` field itself on `Create` (`autoCreateTime`), which is how GORM models are written. Using the DB's `now()` would need a custom `GormValuer` type plus a forced `RETURNING`, which no GORM codebase does. Go's clock has nanoseconds and Postgres stores microseconds, so `NowFunc` truncates to microseconds and the 201 response equals the stored row. The Node stack has the same deviation.
+**`created_at` from the app clock:** GORM fills a `CreatedAt` field itself on `Create` (`autoCreateTime`), which is how GORM models are written. Using the DB's `now()` would need a custom `GormValuer` type plus a forced `RETURNING`, which no GORM codebase does. Go's clock has nanoseconds and Postgres stores microseconds, so `NowFunc` truncates to microseconds and the 201 response equals the stored row. Node, .NET and PHP also set it in the app (docs/02 allows either clock).
 
 **Logging:** GORM logs failed statements as errors. k6's invalid orders are all caught by validation before any SQL runs, so a benchmark never logs. Conformance's unknown-customer check makes GORM log one FK-violation line, which is expected.
 

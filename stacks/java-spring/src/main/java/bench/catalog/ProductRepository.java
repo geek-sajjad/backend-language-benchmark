@@ -7,9 +7,14 @@ import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
-// Query methods run in Spring Data's default read-only transaction, which also makes the
-// Hibernate session read-only (no snapshots kept for dirty checking).
+// Spring Data gives the inherited CRUD methods (findById) a read-only transaction, but declared
+// query methods get none. The interface-level annotation is the pattern Spring Data's reference
+// recommends, so reads here also run read-only, which makes the Hibernate session read-only
+// (no snapshots kept for dirty checking). Inside OrdersService's write transaction these methods
+// simply join it.
+@Transactional(readOnly = true)
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     /** Test 3: one keyset page of full entities. */
@@ -20,6 +25,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     /** Test 5: atomic decrement, no load-modify-save. */
     @Modifying
+    @Transactional
     @Query("update Product p set p.stock = p.stock - :quantity where p.id = :id")
     int decrementStock(int id, int quantity);
 }

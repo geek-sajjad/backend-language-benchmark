@@ -10,7 +10,7 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 | Worker / process count | `node:cluster`: one primary + one worker per core (4 on the app host). |
 | DB pool size (total) | 64 (`DB_POOL_SIZE`), split evenly across workers: 16 per worker with 4 workers. Fixed for every stack (docs/03), not tuned. |
 | Runtime flags / env | `NODE_ENV=production`. No Node flags; default heap limits. |
-| Deviations from the spec | Test 5: `created_at` is set from the app clock (`new Date()`), not the DB's `now()`. See the note below. |
+| Deviations from the spec | none (test 5's `created_at` comes from the app clock, `new Date()`, which docs/02 allows; see the note below) |
 
 ## Implementation notes
 
@@ -20,9 +20,9 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 | 4 | 2 queries: `find` for the 10 orders, then `find` on `OrderItem` with `relations: { product: true }` and `order_id: In(ids)` (one `LEFT JOIN`, only `products.id, name` selected), grouped in JS |
 | 5 | DTO classes with class-validator (`@IsInt`, `@Min`, `@ArrayUnique`, `@ValidateNested`) through the global `ValidationPipe` (errors → 422). One `dataSource.transaction`: price read, `insert` order, one multi-row `insert` of items, then one `decrement(Product, { id }, 'stock', q)` per item in ascending `product_id` order. FK violation on the customer → 422 |
 | 6 | Built-in `fetch`. Its default global dispatcher is one shared undici `Agent` per process (keep-alive, no per-origin connection limit) |
-| 7 | Nested DTO classes (class-transformer `@Type`, class-validator decorators) through the global `ValidationPipe` |
+| 7 | Nested DTO classes built by class-transformer (`@Type`) through the global `ValidationPipe`. No class-validator decorators: test 7 validates nothing beyond parsing (docs/02), and Nest's pipe passes classes without constraints |
 | 8 | Array of plain `Sale` objects built at startup from splitmix64 (BigInt); per request a fresh `Map<number, Group>` |
-| 9 | A second controller under `@Controller('secure')` with `@UseGuards(AuthGuard('jwt'))`. `JwtStrategy` (passport-jwt): RS256 only, `iss`, `aud`, `exp` checked by jsonwebtoken; `validate()` also requires `exp` and a numeric `sub` |
+| 9 | A second controller under `@Controller('secure')` with `@UseGuards(AuthGuard('jwt'))`. `JwtStrategy` (passport-jwt): RS256 only, `iss`, `aud`, `exp` checked by jsonwebtoken; `validate()` also requires `exp` and a numeric `sub`. The public key is parsed once at startup into a `KeyObject`: given the PEM, jsonwebtoken would re-parse it on every request (35 µs) |
 
 Startup per worker: JWT key → sales dataset → DB pool (TypeORM retries for up to a minute) → listen on `:8080`. `/health` answers only once all three are ready. If a worker dies, the primary exits so the failure is visible instead of silently losing a core.
 

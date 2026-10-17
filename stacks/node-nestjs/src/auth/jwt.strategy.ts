@@ -1,3 +1,4 @@
+import { createPublicKey } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -21,8 +22,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      // Read once at startup; no JWKS fetching (docs/02-test-spec.md, Authentication).
-      secretOrKey: readFileSync(env('JWT_PUBLIC_KEY_FILE', '/run/secrets/jwt_public.pem')),
+      // Read and parsed once at startup; no JWKS fetching (docs/02-test-spec.md, Authentication).
+      // passport-jwt hands this to jsonwebtoken, which re-parses a PEM on every verify but uses a
+      // KeyObject as is. The typings only list string | Buffer, hence the cast.
+      secretOrKey: createPublicKey(readFileSync(env('JWT_PUBLIC_KEY_FILE', '/run/secrets/jwt_public.pem'))) as unknown as Buffer,
       algorithms: ['RS256'],
       issuer: 'bench-idp',
       audience: 'bench-api',

@@ -159,6 +159,8 @@ Before the campaign session, the **DB ceiling** for tests 2–5 is measured **ma
 
 Stacks below the DB ceiling are still measured cleanly: for them the app is the limit, exactly as before.
 
+The ceiling is for the test's own SQL, so a stack can be DB-limited below the line: its data layer may add statements (Spring Data and SQLAlchemy wrap every read in a transaction, Npgsql resets each pooled connection with `DISCARD ALL`), and PHP opens a new connection per request. Conformance reports each stack's SQL statements and new connections per request for tests 2–5, and [03](03-tech-stacks.md#database-work-per-request) lists them, so the video can show why DB-limited stacks stop at different rates.
+
 ## Proving the load generator is not the bottleneck
 
 - The manual calibration also runs the echo script (`00-echo.js`, one GET per iteration) against a trivial echo server on the app host to measure **k6's own max rate** on the chosen loadgen size, with Prometheus and remote-write running and Grafana stopped, exactly as in the campaign.

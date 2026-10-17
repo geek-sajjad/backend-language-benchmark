@@ -6,11 +6,11 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 
 | Item | Value |
 |---|---|
-| Pinned versions | PHP 8.5.11 (`php:8.5.11-fpm-trixie`, digest pinned in `Dockerfile`), Nginx from Debian trixie's apt (1.26), Composer 2.10.3 (build only, digest pinned); Laravel 13.36.0, firebase/php-jwt 7.2.1, Guzzle 8.2.0 (through the `Http` facade). Full tree in `composer.lock`. |
+| Pinned versions | PHP 8.5.11 (`php:8.5.11-fpm-trixie`, digest pinned in `Dockerfile`), Nginx 1.26.3 and libpq 17.11 from Debian trixie (exact package versions pinned in `Dockerfile`, see [Pinned packages](#pinned-packages)), Composer 2.10.3 (build only, digest pinned); Laravel 13.36.0, firebase/php-jwt 7.2.1, Guzzle 8.2.0 (through the `Http` facade). Full tree in `composer.lock`. |
 | Worker / process count | PHP-FPM `pm = static`, `pm.max_children = 64` (fixed, not tuned; docs/03). Nginx `worker_processes auto` (one per core = 4). |
 | DB pool size (total) | No pool: Laravel opens one PDO connection per request (the default, docs/03), so at most 64 at a time (one per FPM child). `DB_POOL_SIZE` is not used. |
 | Runtime flags / env | `php.ini-production` + OPcache `validate_timestamps=0`, `jit=tracing` (JIT buffer at the 64M default), `memory_consumption` at the 128M default, `opcache.preload` of the test 8 dataset only. `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=stderr`, `LOG_LEVEL=warning`, `CACHE_STORE=array`. |
-| Deviations from the spec | Test 5: `created_at` from the app clock (as in Node, Go, .NET). Test 6: no shared keep-alive pool; every downstream call opens a new connection. Test 8: dataset pre-generated at build time and kept in OPcache (docs/02 Appendix A). |
+| Deviations from the spec | Test 6: no shared keep-alive pool; every downstream call opens a new connection. Test 8: dataset pre-generated at build time and kept in OPcache (docs/02 Appendix A). |
 
 ## Layout
 
@@ -56,7 +56,7 @@ Laravel's default global middleware stays on, including `TrimStrings` and `Conve
 
 **Test 8 dataset:** `tools/gen-sales.php` runs in a build stage with the GMP extension, since PHP ints are signed and splitmix64 needs unsigned 64-bit math. Record 1 is `[1,0,30,0,11648,7,341]` as in docs/02. Measured inside the image: `require` of the file costs 392 bytes of request memory with OPcache, against 11.8 MB without it, so the rows are shared and not copied.
 
-**`created_at` from the app clock:** Eloquent fills `created_at` itself on insert (`UPDATED_AT = null`, since the table has no `updated_at`). Laravel's Postgres date format has whole seconds, so the stored value and the 201 response agree.
+**`created_at` from the app clock:** Eloquent fills `created_at` itself on insert (`UPDATED_AT = null`, since the table has no `updated_at`), as Node, Go and .NET do too (docs/02 allows either clock). Laravel's Postgres date format has whole seconds, so the stored value and the 201 response agree.
 
 **Test 6, no keep-alive pool:** PHP-FPM frees the cURL handle when the request ends, so each downstream call does a TCP handshake to the mock. PHP 8.5's persistent cURL share handles could keep connections open, but Guzzle doesn't use them (potential optimization, docs/03). With 64 children and a 50 ms mock, the ceiling is about 1,280 req/s.
 
@@ -81,3 +81,13 @@ cd stacks/php-laravel
 docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -e COMPOSER_HOME=/tmp/c -v "$PWD":/app -w /app composer:2.10.3 composer update --no-scripts --no-autoloader
 rm -rf vendor
 ```
+
+## Pinned packages
+
+The `Dockerfile` installs exact Debian versions of the two runtime packages that come from apt: `nginx=1.26.3-3+deb13u9` and `libpq-dev=17.11-0+deb13u1` (which brings the `libpq5` that `pdo_pgsql` uses), so every rebuild gets the same binaries, as the other stacks do through image digests. Debian's archive keeps only the newest version of a package in trixie and trixie-security, so once Debian ships an update the build fails with `Version '…' for '…' was not found`. Then look up the current versions, update both pins, rebuild and rerun conformance:
+
+```bash
+docker run --rm php:8.5.11-fpm-trixie sh -c 'apt-get update -qq && apt-cache policy nginx libpq-dev | grep -E "^[a-z]|Candidate"'
+```
+
+Build the images once in the session before the campaign (calibration), so a stale pin shows up there and not mid-campaign.

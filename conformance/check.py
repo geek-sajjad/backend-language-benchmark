@@ -7,8 +7,9 @@ Expected values for the DB endpoints come from SQL run through `psql` (PG* env v
 defaults: 127.0.0.1:5432, user/password/db bench). Tests 6-8 come from reference/reference.py.
 Needs: psql, PyJWT with cryptography, and k6/data/jwt/private.pem (k6/data/jwt/gen-keys.sh).
 
-Test 5 writes orders (customer 99999 and products 12345, 20001..20030 by default), so run it
-against a database you can reset (db/reset.sql). --skip-writes skips every write check.
+Test 5 writes orders (customer 99999 and products 12345, 20001..20030 by default; the database
+work report also orders products 60000..60179 for customer 77777), so run it against a database
+you can reset (db/reset.sql). --skip-writes skips every write check.
 """
 import argparse
 import base64
@@ -406,6 +407,60 @@ def hs256_token(secret, claims):
     return (signing_input + b"." + b64(signature)).decode()
 
 
+# ---------------------------------------------------------------- database work per request (reported only)
+
+# All statements, the transaction starts and the transaction ends. pg_stat_statements doesn't see a
+# utility statement that is re-executed as a server-side prepared statement (pgjdbc's COMMIT), so
+# the starts and ends that don't pair up are added back.
+DB_STATEMENTS = """SELECT coalesce(sum(calls), 0),
+                          coalesce(sum(calls) FILTER (WHERE query ~* '^\\s*(begin|start transaction)\\M'), 0),
+                          coalesce(sum(calls) FILTER (WHERE query ~* '^\\s*(commit|end|rollback)\\M'
+                                                        AND query !~* '^\\s*rollback\\s+to\\M'), 0)
+                   FROM pg_stat_statements
+                   WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+                     AND query NOT ILIKE '%pg_stat_statements%'"""
+DB_SESSIONS = "(SELECT sessions FROM pg_stat_database WHERE datname = current_database())"
+
+
+def db_work_per_request(method, path_for, body_for=None, n=20):
+    """Average SQL statements (BEGIN/COMMIT/ROLLBACK included) and new DB connections per request.
+
+    Not a pass/fail check. An ORM can add statements to the test's own SQL (for example a
+    transaction around every read), and PHP opens a connection per request, so stacks reach the
+    db's limit at different rates (docs/04, "When Postgres is the bottleneck")."""
+    def send(i):
+        http(method, path_for(i), body_for(i) if body_for else None)
+
+    for i in range(2 * n):  # warm-up: pools open their connections, drivers cache statements
+        send(i)
+    # Both reads mention pg_stat_statements, so neither is counted as a statement.
+    sessions_before = int(sql(f"SELECT pg_stat_statements_reset(), {DB_SESSIONS}").split("|")[1])
+    for i in range(2 * n, 3 * n):
+        send(i)
+    statements, starts, ends, sessions_after = map(
+        int, sql(f"SELECT s.*, {DB_SESSIONS} FROM ({DB_STATEMENTS}) s").split("|"))
+    statements += abs(starts - ends)
+    # The psql session doing the second read is itself one new session.
+    return statements / n, (sessions_after - sessions_before - 1) / n
+
+
+def report_db_work(writes):
+    print("\ndatabase work per request (reported, not checked)")
+    probes = [
+        ("test 2", "GET", lambda i: f"/products/{1 + i * 997 % 100_000}", None),
+        ("test 3", "GET", lambda i: f"/categories/{1 + i % 50}/products?after={i * 1_000}", None),
+        ("test 4", "GET", lambda i: f"/customers/{1_000 + i}/orders", None),
+    ]
+    if writes:
+        # Customer 77777 and products 60000..60179 are used by no other check.
+        probes.append(("test 5, 3 items", "POST", lambda i: "/orders",
+                       lambda i: {"customer_id": 77_777,
+                                  "items": [{"product_id": 60_000 + 3 * i + k, "quantity": 1} for k in range(3)]}))
+    for name, method, path_for, body_for in probes:
+        statements, connections = db_work_per_request(method, path_for, body_for)
+        print(f"  {name:<16} {statements:4.1f} SQL statements (incl. BEGIN/COMMIT)  {connections:4.2f} new connections")
+
+
 def main():
     global BASE
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -423,6 +478,7 @@ def main():
     if not args.skip_writes:
         check_writes(key)
     check_auth(key, writes=not args.skip_writes)
+    report_db_work(writes=not args.skip_writes)
 
     print(f"\n{PASSES} passed, {len(FAILURES)} failed")
     sys.exit(1 if FAILURES else 0)

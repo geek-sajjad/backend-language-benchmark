@@ -88,8 +88,8 @@ The app host (`c7a.xlarge`, 4 cores / 8 GB) is the hardware rule and the only ho
 
 1. **Hook:** "Same server, 7 languages, 8 tests. Which one would you put in production?"
 2. **Rules:** hardware, SLO, "realistic stacks" rule, and why the geometric mean is used (30 s)
-3. **The setup:** AWS diagram, Grafana clips, which tests were DB-bound and for which stacks (the DB ceiling line)
-4. **Test by test:** 2 → 8, short chart per test, highlight surprises (test 3 ORM hydration, test 6 concurrency models, test 8 GC)
+3. **The setup:** AWS diagram, Grafana clips, which tests were DB-bound and for which stacks (the DB ceiling line, and the SQL statements and connections per request that make DB-limited stacks stop at different rates, [03](03-tech-stacks.md#database-work-per-request))
+4. **Test by test:** 2 → 8, short chart per test, highlight surprises (test 3 ORM hydration, test 6 concurrency models, test 8 GC). Test 6 for Python: the limit is CPU spent in httpx (its cost per call and its connection-pool bookkeeping), not asyncio, which puts Python below PHP-FPM there ([03](03-tech-stacks.md#python-fastapi--sqlalchemy-2-async--uvicorn-workers))
 5. **Category winners:** database, concurrency, CPU
 6. **The real-app test (9, authenticated user sessions):** throughput, p99 at common load, memory
 7. **Overall ranking** with the four components visible; cost per million requests chart

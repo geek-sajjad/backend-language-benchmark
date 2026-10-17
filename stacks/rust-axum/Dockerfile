@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM rust:1.99.0-slim-trixie AS build
+FROM rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 AS build
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY .sqlx ./.sqlx

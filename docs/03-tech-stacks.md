@@ -11,19 +11,19 @@ For every language we asked: **"What would a typical team pick today for a new p
 
 Optimizations that change libraries or bypass the framework are listed for each stack under **potential optimizations**. They are excluded from the main round and are candidates for a follow-up "tuned" episode.
 
-> Versions are the current LTS or stable releases as of the planning date (Oct 2026). Exact versions are pinned in each stack's Dockerfile and lockfile during milestone M2 and frozen before the first scored run.
+> Versions are the current LTS or stable releases as of the planning date (Oct 2026). Exact versions are pinned in each stack's Dockerfile and lockfile during milestone M2 and frozen before the first scored run. Check Node before freezing: on Node's usual schedule, Node.js 26 becomes the Active LTS in late October 2026, so if the scored campaign runs after that, the latest-LTS rule means moving the Node stack from 24 to 26.
 
 ## Allowed production config (applies to every stack)
 
 | Area | Rule |
 |---|---|
-| Build | Release / production build (`--release`, `NODE_ENV=production`, `APP_ENV=production`, Release config, …) |
+| Build | Release / production build (`--release`, `NODE_ENV=production`, `APP_ENV=production`, Release config, …). Release settings the ecosystem commonly ships are allowed and listed per stack (Rust `lto = "thin"` + `codegen-units = 1`, PHP OPcache + JIT). Builds that need a recorded profile (Go PGO) or target one machine (`target-cpu=native`) are not: they are potential optimizations |
 | Workers | Use all 4 cores: worker processes = 4 for multi-process runtimes; single-process runtimes use their default (all cores) |
-| DB pool | **Exactly 64 connections to Postgres per pooled stack**, split evenly for multi-process runtimes (4 workers × 16). Fixed for every stack and not tuned per stack (decided 2026-10-14): the same number for everyone is the easiest to defend, and pool tuning is a potential optimization for the tuned episode. |
+| DB pool | **A pool maximum of 64 connections to Postgres per pooled stack**, split evenly for multi-process runtimes (4 workers × 16). Each pool opens connections at its default pace: HikariCP opens all 64 at startup, the others open them as load needs them. Fixed for every stack and not tuned per stack (decided 2026-10-14): the same number for everyone is the easiest to defend, and pool tuning is a potential optimization for the tuned episode. |
 | HTTP keep-alive | On, for both inbound and outbound (test 6) connections |
 | Logging | No per-request access logs and no SQL logging; warnings and errors only |
-| Validation | The framework's standard validation mechanism (test 5) |
-| Memory | Defaults, except setting the runtime's heap ceiling to fit 30 GB where the runtime requires a value |
+| Validation | The framework's standard validation mechanism (test 5). Test 7 adds none: its request model is only as strict as parsing makes it ([02](02-test-spec.md#7--heavy-json-post-transform)) |
+| Memory | Defaults, except setting the runtime's heap ceiling to fit the 7 GB container limit where the runtime needs a value (Java: `-XX:MaxRAMPercentage=75`) |
 | Not allowed | Swapping the JSON/HTTP/ORM library, raw SQL in place of the ORM, response caching, precomputed responses, disabling safety (HTML escaping, validation), unusual runtime flags |
 
 ---
@@ -35,9 +35,9 @@ Optimizations that change libraries or bypass the framework are listed for each 
 | Runtime | Node.js 24 LTS |
 | Framework | NestJS 12 with `@nestjs/platform-fastify` (Fastify 5) |
 | ORM / driver | TypeORM 1.1 + `pg` |
-| Validation | `class-validator` + `class-transformer` via the global `ValidationPipe` |
+| Validation | `class-validator` + `class-transformer` via the global `ValidationPipe`. Test 7's DTO classes have no constraint decorators, so the pipe only builds them (`class-transformer`) |
 | HTTP client | Built-in `fetch` (undici); its default global dispatcher is a shared keep-alive `Agent` |
-| Auth (test 9) | `@nestjs/passport` + `passport-jwt` guard (NestJS's documented JWT setup) |
+| Auth (test 9) | `@nestjs/passport` + `passport-jwt` guard (NestJS's documented JWT setup). The public key is parsed once at startup into a `KeyObject`: given the PEM, `jsonwebtoken` re-parses it on every request (35 µs, which makes a verify take 80 µs instead of 23 µs; measured 2026-10-15) |
 | Process model | `node:cluster` with 4 workers, TypeORM pool of 16 per worker (64 total) |
 
 **Why:** NestJS is the most adopted structured Node backend framework. Its architecture (DI, modules, decorators) is what enterprises use, which makes it closer to "the Spring of Node" than bare Express. The Fastify adapter is officially supported and is NestJS's documented performance path. TypeORM is Nest's long-standing first-class ORM integration (`@nestjs/typeorm`). Node is single-threaded per process, so cluster mode with one worker per core is the standard production deployment. Without it, Node would be using only 1 of 4 cores.
@@ -63,7 +63,7 @@ Optimizations that change libraries or bypass the framework are listed for each 
 | Validation | `validator` 0.21 crate + serde |
 | HTTP client | `reqwest` 0.13 (shared `Client`, connection pooling built in) |
 | Auth (test 9) | `jsonwebtoken` 11 with the `aws_lc_rs` backend (the backend its README shows first; since v10 a backend must be chosen) in an Axum middleware |
-| Process model | One process, Tokio scheduler on 4 cores, pool of up to 64 |
+| Process model | One process, Tokio scheduler on 4 cores, pool maximum 64 |
 
 **Why:** Axum (from the Tokio team) is the most popular Rust web framework today. SQLx is the de facto Postgres layer for async Rust. It isn't a full ORM like the others, but it is what most Rust teams use. The heavier ORMs (Diesel, SeaORM) see much less use in async web services, and the stack docs say so explicitly.
 
@@ -87,7 +87,7 @@ Optimizations that change libraries or bypass the framework are listed for each 
 | Validation | Gin binding (`go-playground/validator`) |
 | HTTP client | `net/http` with a shared `Transport`, `MaxIdleConnsPerHost` and `MaxIdleConns` raised to 1024 (required production config: the defaults of 2 per host and 100 in total are a well-known production bug) |
 | Auth (test 9) | `golang-jwt/jwt/v5` in a Gin middleware |
-| Process model | One process, `GOMAXPROCS` = 4 (default), pool of 64 |
+| Process model | One process, `GOMAXPROCS` = 4 (default), pool maximum 64 |
 | Production config | `database/sql` `SetMaxIdleConns(64)` (the default of 2 idle connections makes the pool reconnect constantly under load; decided 2026-10-14). GORM logger at `Warn` with slow-query logging off (no SQL logging) |
 
 **Why:** Gin is the most starred and most used Go web framework, and GORM is Go's most used ORM. Many Go teams prefer stdlib `net/http` + `pgx` + `sqlc` instead, which is a real cultural split in the Go community (see [open decisions](08-roadmap.md#open-decisions)). Gin + GORM was picked to keep the "framework + ORM" rule consistent across all seven languages.
@@ -117,10 +117,14 @@ Optimizations that change libraries or bypass the framework are listed for each 
 
 **Why:** FastAPI is now the most popular choice for new Python APIs and is async-first, which matters for tests 2–6. SQLAlchemy 2 is Python's dominant ORM, and asyncpg is its fastest async Postgres driver. The GIL limits each process to one core, so one Uvicorn worker per core (4) is the documented production setup. Django was considered; FastAPI won on "new API project in 2026" share and its native async.
 
+**Test 6 limit (measured locally 2026-10-15):** Python's test 6 is limited by CPU spent in httpx, not by asyncio's concurrency, and the video says so. With the app pinned to 4 cores, test 6 used 2.4 ms of CPU per request at 500 req/s and saturated all 4 workers at 1,000 req/s (p95 over the SLO), although each request is mostly a 50 ms wait. That is below PHP-FPM's ~1,280 req/s ceiling. httpx alone, outside FastAPI, costs about 1.4 ms of CPU per call on one core with up to 25 connections in use. Its pool (httpcore 1.0.9) adds bookkeeping that grows with the pool: it rescans every connection whenever a request starts or finishes, and walks the whole pool again for each idle connection. One scan costs 29 µs with 50 pooled connections (10 idle), 0.82 ms with 200 (100 idle) and 19.8 ms with 1,024 (512 idle), and it runs at least twice per request. When one process has more calls in flight than it keeps up with, the cost per call rises steeply: 6.9 ms with 50 connections in use on one core. httpx stays because it is what FastAPI teams typically use. Its default of 20 kept-alive connections would keep the scans short, but it would also close and reopen connections constantly, which breaks the keep-alive rule.
+
 **Potential optimizations:**
+- aiohttp's client instead of httpx for test 6 (commonly much cheaper per call, and its pool doesn't rescan every connection on each request)
 - `ORJSONResponse` or msgspec
 - Granian server or Gunicorn + uvicorn workers
 - Raw asyncpg queries
+- Reads without SQLAlchemy's automatic `BEGIN` … `ROLLBACK` (an `AUTOCOMMIT` connection for read endpoints; see [Database work per request](#database-work-per-request))
 - Free-threaded CPython 3.15t
 - `gc.freeze()` after startup (keeps the sales dataset out of GC scans)
 - numpy or polars for test 8 (breaks the "pure language" rule)
@@ -136,8 +140,8 @@ Optimizations that change libraries or bypass the framework are listed for each 
 | Framework | Spring Boot 4.1 with Spring MVC (embedded Tomcat 11), `spring.threads.virtual.enabled=true` |
 | ORM / driver | Spring Data JPA (Hibernate 7) + PostgreSQL JDBC + HikariCP |
 | JSON | Jackson 3 (Spring default) |
-| Validation | Jakarta Bean Validation (`@Valid`) |
-| HTTP client | Spring `RestClient` over JDK `HttpClient` |
+| Validation | Jakarta Bean Validation (`@Valid` on the test 5 body) |
+| HTTP client | Spring `RestClient` over JDK `HttpClient`, set to HTTP/1.1 (by default the JDK client asks every plain-HTTP connection to upgrade to h2c) |
 | Auth (test 9) | Spring Security OAuth2 Resource Server (`NimbusJwtDecoder.withPublicKey`), filter chain limited to `/secure/**` |
 | Heap | `-XX:MaxRAMPercentage=75` (explicit, so the JVM uses the container's memory) |
 | Production config | `server.tomcat.max-keep-alive-requests=-1` (Tomcat otherwise closes each keep-alive connection after 100 requests), `spring.jpa.open-in-view=false` (Spring Boot's own startup warning), strict Jackson scalar coercion (test 5 validation) |
@@ -152,6 +156,7 @@ Optimizations that change libraries or bypass the framework are listed for each 
 - Trimming unused Spring Security filters from the chain
 - Quarkus or Micronaut as alternative frameworks
 - Hibernate batch and stateless sessions
+- Hibernate's read-only query hint instead of read-only transactions on reads (no `BEGIN READ ONLY` … `COMMIT` per read)
 
 ---
 
@@ -174,6 +179,7 @@ Optimizations that change libraries or bypass the framework are listed for each 
 **Potential optimizations:**
 - `System.Text.Json` source generators
 - `AddDbContextPool` and EF compiled queries
+- Npgsql `No Reset On Close=true` (no `DISCARD ALL` each time a connection returns to the pool) and EF Core `AutoSavepointsEnabled = false` (no savepoint around test 5's `SaveChanges`)
 - Dapper or raw Npgsql
 - Native AOT (limited with EF Core)
 - `DOTNET_GCDynamicAdaptationMode` (DATAS) tuning to reduce RSS
@@ -190,8 +196,8 @@ Optimizations that change libraries or bypass the framework are listed for each 
 | Validation | Laravel FormRequest (`integer:strict`, so `"42"` is rejected) |
 | HTTP client | Laravel `Http` facade (Guzzle 8) |
 | Auth (test 9) | `firebase/php-jwt` 7 in a route middleware. Laravel has no built-in JWT; its first-party Sanctum uses database-stored tokens, which would make this a different test. `firebase/php-jwt` is the most downloaded PHP JWT library. |
-| Server | Nginx (Debian trixie package) → PHP-FPM over a unix socket, one container. `pm = static`, `pm.max_children = 64`, fixed and not tuned (decided 2026-10-15): each child holds at most one DB connection, so this matches the 64-connection rule |
-| Production config | Nginx `keepalive_requests` raised to 10⁹ (it otherwise closes each keep-alive connection after 1000 requests; same idea as Java's Tomcat setting). FPM access log off (the official image turns it on) |
+| Server | Nginx 1.26 (Debian trixie package, exact version pinned, as is libpq) → PHP-FPM over a unix socket, one container. `pm = static`, `pm.max_children = 64`, fixed and not tuned (decided 2026-10-15): each child holds at most one DB connection, so this matches the 64-connection rule |
+| Production config | Nginx `keepalive_requests` raised to 10⁹ (it otherwise closes each keep-alive connection after 1000 requests; same idea as Java's Tomcat setting). FPM access log off (the official image turns it on). Laravel's `pgsql` connection without its default `search_path` (Laravel otherwise runs `set search_path` on every new connection, here every request; `public` is Postgres's default anyway) and with `sslmode=disable` instead of `prefer` (no SSL negotiation per connection; the db has no TLS) |
 | Laravel prod steps | `config:cache` (at container start, since it freezes env vars), `route:cache`, `event:cache`, `composer install --no-dev -o` |
 | Test 8 dataset | Pre-generated `sales_data.php` held in OPcache shared memory and preloaded ([02 Appendix A](02-test-spec.md#appendix-a-php-in-memory-dataset)) |
 
@@ -208,6 +214,24 @@ Optimizations that change libraries or bypass the framework are listed for each 
 - Tuning `pm.max_children` / `pm` mode
 - Preloading
 - The `simdjson` extension
+
+---
+
+## Database work per request
+
+The DB ceiling line on each chart is for the test's own SQL. A data layer adds statements of its own (Spring Data and SQLAlchemy wrap every read in a transaction, Npgsql resets each pooled connection with `DISCARD ALL`), and PHP opens a new connection per request, so stacks reach the db's limit at different rates. Conformance reports both numbers for each stack (`conformance/check.py`: 20 requests after a warm-up; test 5 with 3 items per order, whose own SQL is 8 statements: `BEGIN`, the price read, the order insert, one items insert, 3 stock updates, `COMMIT`). Measured 2026-10-15, every stack at this commit. The test columns are SQL statements per request, transaction control included:
+
+| Stack | Test 2 | Test 3 | Test 4 | Test 5 | New DB connections per request | Added by the data layer |
+|---|---|---|---|---|---|---|
+| Rust | 1 | 1 | 2 | 8 | 0 | nothing |
+| Go | 1 | 1 | 2 | 8 | 0 | nothing |
+| Node.js | 1 | 1 | 2 | 8 | 0 | nothing |
+| Python | 3 | 3 | 4 | 8 | 0 | `BEGIN` … `ROLLBACK` around every read (SQLAlchemy's autobegin) |
+| Java | 3 | 3 | 4 | 10 | 0 | `BEGIN READ ONLY` … `COMMIT` around every read (Spring Data), one `INSERT` per order item (`IDENTITY` ids can't be batched) |
+| .NET | 2 | 2 | 2 | 13 | 0 | `DISCARD ALL` each time a connection goes back to Npgsql's pool, `SAVEPOINT` + `RELEASE SAVEPOINT` around test 5's `SaveChanges`, one `INSERT` per order item (sent in one round trip). Test 4 is a single query |
+| PHP | 1 | 1 | 3 | 8 | 1 | a new connection for every request (Laravel's default, about 10 ms of db CPU each, see the PHP section). Test 4 is 3 queries |
+
+Statements aren't equal in cost: `BEGIN`, `COMMIT` and `DISCARD ALL` are cheap next to a query, and a new connection costs far more than any of them.
 
 ---
 

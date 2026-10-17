@@ -1,12 +1,12 @@
 # rust-axum
 
-Status: **implemented**, passes `conformance/check.py` locally (120/120).
+Status: **implemented**, passes `conformance/check.py` locally (118/118, against a freshly reset DB).
 
 Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../../docs/03-tech-stacks.md).
 
 | Item | Value |
 |---|---|
-| Pinned versions | Rust 1.99.0 (`rust:1.99.0-slim-trixie` builder), runtime `debian:trixie-slim` (digest pinned in `Dockerfile`); Axum 0.8.9, Tokio 1.53.2, SQLx 0.9.0, serde_json 1.0.151, validator 0.21.0, reqwest 0.13.5, jsonwebtoken 11.1.0 (`aws_lc_rs`), chrono 0.4.45. Full tree in `Cargo.lock`. |
+| Pinned versions | Rust 1.99.0 (`rust:1.99.0-slim-trixie` builder), runtime `debian:trixie-slim` (both digest pinned in `Dockerfile`); Axum 0.8.9, Tokio 1.53.2, SQLx 0.9.0, serde_json 1.0.151, validator 0.21.0, reqwest 0.13.5, jsonwebtoken 11.1.0 (`aws_lc_rs`), chrono 0.4.45. Full tree in `Cargo.lock`. |
 | Worker / process count | One process; Tokio multi-threaded runtime with the default worker count (one per core = 4). |
 | DB pool size (total) | 64 (`DB_POOL_SIZE`), SQLx `PgPool`; fixed for every stack (docs/03), not tuned |
 | Runtime flags / env | None beyond the spec env vars. `TCP_NODELAY` is set on accepted sockets (Axum's documented `tap_io` pattern; Go, .NET and Node set it by default). |

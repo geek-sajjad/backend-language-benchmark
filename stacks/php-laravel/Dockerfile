@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1
 # Laravel on Nginx + PHP-FPM, one container (docs/03).
 FROM php:8.5.11-fpm-trixie@sha256:adde18b67ea7a8cddc580f657e0d3f16e800758c6fa690b969c2925a303e8afc AS base
+# Exact Debian versions of the runtime packages (Nginx, and libpq for pdo_pgsql), so a rebuild
+# gets the same binaries. If Debian has replaced one, the build fails: see README "Pinned packages".
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends nginx libpq-dev; \
+    apt-get install -y --no-install-recommends nginx=1.26.3-3+deb13u9 libpq-dev=17.11-0+deb13u1; \
     docker-php-ext-install -j"$(nproc)" pdo_pgsql; \
     apt-mark manual libpq5; \
     apt-get purge -y --auto-remove libpq-dev; \

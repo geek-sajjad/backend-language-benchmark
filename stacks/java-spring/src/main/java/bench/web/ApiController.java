@@ -94,8 +94,9 @@ public class ApiController {
         return downstream.inventory(id);
     }
 
+    /** No `@Valid`: test 7 validates nothing beyond parsing (docs/02-test-spec.md, test 7). */
     @PostMapping({"/transform", "/secure/transform"})
-    CartSummary transform(@Valid @RequestBody Cart cart) {
+    CartSummary transform(@RequestBody Cart cart) {
         return transformer.transform(cart);
     }
 

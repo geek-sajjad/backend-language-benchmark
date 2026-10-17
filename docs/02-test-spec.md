@@ -140,7 +140,7 @@ Use the ORM's idiomatic eager loading: a join, or a "load orders, then load item
    - Prices come from a plain read in the same transaction. An unknown product id or customer id → 422, and nothing is written.
    - Stock is decremented with an **atomic update expression** through the ORM's update API (`UPDATE products SET stock = stock - :q WHERE id = :id`), not load-modify-save. No row locks beyond what that statement takes.
    - Items are processed in **ascending `product_id` order**, so concurrent orders lock rows in the same order and can't deadlock.
-   - The new order has `status = "pending"`, `created_at = now()` and `total_cents = Σ unit_price_cents × quantity`.
+   - The new order has `status = "pending"`, `created_at` = the current time and `total_cents = Σ unit_price_cents × quantity`. The current time comes from the DB (`now()`) or the app's clock, whichever the ORM does with this schema, since the column has no `DEFAULT` (decided 2026-10-15): Rust, Python and Java use the DB clock; Node, Go, .NET and PHP set it in the app.
 3. Return **201** with the created order (same shape as an order in test 4), items in ascending `product_id` order. Conformance ignores the `id` and `created_at` values but checks their types, and checks that N parallel orders on one product decrease its stock by exactly the ordered total.
 
 **k6:** 1–5 items with distinct random products (100k products keeps row-lock contention negligible). 2% of requests are deliberately invalid, and k6 expects 422 for those, so they don't count as errors.
@@ -165,7 +165,7 @@ The request is almost all waiting. Throughput is therefore set by **how many req
   ]}
   ```
 - **Work:**
-  1. Parse into typed structures. Language-idiomatic models are used: DTO classes in Java/.NET/TS, structs in Go/Rust, Pydantic models in Python and arrays in PHP.
+  1. Parse into typed structures. Language-idiomatic models are used: DTO classes in Java/.NET/TS, structs in Go/Rust, Pydantic models in Python and arrays in PHP. Parsing is the only input check: test 5 measures validation, so test 7 adds none (no constraint annotations, `@Valid` or validator decorators; decided 2026-10-15). A model is as strict as its parser makes it: serde and Pydantic reject a missing field, while `encoding/json` and `System.Text.Json` leave it at its zero value.
   2. Apply discounts to the unit price **in list order**, in integer cents: `percent` → `unit − unit × value / 100` (integer division), `fixed` → `max(0, unit − value)`. Line total = discounted unit × `quantity`.
   3. Group by `product.category`, with count, subtotal and the top 3 items by line total (ties: lower `line_id` first).
   4. Normalize every item name: trim, lowercase, collapse whitespace runs to one space. Names are ASCII.
@@ -246,7 +246,7 @@ Real APIs check a token on every request, so test 9 does too. The same endpoints
 | Header | `Authorization: Bearer <token>` |
 | Checks | Signature, `exp`, `iss = "bench-idp"`, `aud = "bench-api"`; the `sub` claim (the customer id as a string, for example `"42"`) is exposed to the handler as the authenticated user. `exp`, `iss`, `aud` and `sub` are required. |
 | Authorization | `GET /secure/customers/{id}/orders` returns **403** unless `id == sub`. `POST /secure/orders` ignores any `customer_id` in the body and uses `sub`. |
-| Public key | PEM file read once at startup (`JWT_PUBLIC_KEY_FILE`). No JWKS fetching during the test. |
+| Public key | PEM file read once at startup (`JWT_PUBLIC_KEY_FILE`) and turned into the JWT library's key object once, so requests don't re-parse the PEM (PHP-FPM keeps no objects between requests, so it builds the key per request). No JWKS fetching during the test. |
 | Library | The framework's standard JWT or auth middleware (listed per stack in [03-tech-stacks.md](03-tech-stacks.md)) |
 | Forbidden | Caching verification results; skipping signature checks; HS256 |
 | Failure | Missing, expired or invalid token → **401**; another customer's orders → **403** |

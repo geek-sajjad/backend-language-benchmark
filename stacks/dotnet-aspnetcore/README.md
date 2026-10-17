@@ -10,7 +10,7 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 | Worker / process count | One process. Kestrel and the .NET thread pool use every core of the host (4). |
 | DB pool size (total) | 64 (`DB_POOL_SIZE`), Npgsql `Maximum Pool Size`; fixed for every stack (docs/03), not tuned |
 | Runtime flags / env | None. Release build; defaults for everything else: Server GC (with DATAS, the .NET 9+ default), tiered compilation with Dynamic PGO, GC heap limit at the default 75% of the 7 GB container limit. |
-| Deviations from the spec | Test 5: `created_at` is set from the app clock, not the DB's `now()`. See the note below. |
+| Deviations from the spec | none (test 5's `created_at` comes from the app clock, which docs/02 allows; see the note below) |
 
 ## Layout
 
@@ -47,7 +47,9 @@ Stack choice, reasons and potential optimizations: [docs/03-tech-stacks.md](../.
 
 Startup order: JWT key → sales dataset → DB connection (opened once, retried for up to 60 s), all before `app.Run()` starts Kestrel, so `/health` answers only once all three are ready.
 
-**`created_at` from the app clock:** EF Core can't write a SQL expression such as `now()` into an `INSERT`. The idiomatic EF way is `HasDefaultValueSql("now()")`, which assumes the column has a DB `DEFAULT` (an EF migration would create one). The shared schema has none, so EF would insert NULL. The handler therefore sets `CreatedAt = DateTime.UtcNow`, truncated to microseconds so the 201 response equals the stored row. The Node and Go stacks have the same deviation (decided 2026-10-15).
+**`created_at` from the app clock:** EF Core can't write a SQL expression such as `now()` into an `INSERT`. The idiomatic EF way is `HasDefaultValueSql("now()")`, which assumes the column has a DB `DEFAULT` (an EF migration would create one). The shared schema has none, so EF would insert NULL. The handler therefore sets `CreatedAt = DateTime.UtcNow`, truncated to microseconds so the 201 response equals the stored row. Node, Go and PHP also set it in the app (docs/02 allows either clock; decided 2026-10-15).
+
+**Statements Npgsql and EF Core add:** EF Core opens a connection around every query outside a transaction and hands it back to the pool afterwards, and Npgsql resets a returned connection with `DISCARD ALL`. Each read request therefore costs one `DISCARD ALL` on top of its query, and test 5 one per order. Test 5's `SaveChanges` inside the explicit transaction is also wrapped in `SAVEPOINT` … `RELEASE SAVEPOINT`, which EF Core does by default when the transaction is yours. Both defaults stay; `No Reset On Close=true` and `AutoSavepointsEnabled = false` are potential optimizations (docs/03, "Database work per request").
 
 **Authentication on unprotected routes:** with JwtBearer as the only scheme, ASP.NET Core makes it the default and the authentication middleware runs on every request, including tests 2–8. Without an `Authorization` header the handler returns at once, so this is the normal .NET setup and costs very little. (Java limits Spring Security to `/secure/**` because its filter chain is much heavier.)
 
