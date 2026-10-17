@@ -60,8 +60,9 @@ def main(path, config_path=None):
         if ok and r.get("db_bound") == "1":
             db_bound.add((stack, test))
         if test == MIXED_TEST:
-            p99[stack] = float(r["p99_common_ms"]) if ok else None
-            rss[stack] = float(r["peak_rss_mb"]) if ok else None
+            # empty until the common-load session (session 8) has run
+            p99[stack] = float(r["p99_common_ms"]) if ok and r["p99_common_ms"] else None
+            rss[stack] = float(r["peak_rss_mb"]) if ok and r["peak_rss_mb"] else None
 
     stacks = sorted(language)
     test_scores = {}        # test -> {stack: score}
