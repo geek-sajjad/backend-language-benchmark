@@ -4,7 +4,7 @@
 # Idempotent: with an existing bench-pgdata volume it only (re)starts the container.
 #
 #   ./infra/host-setup/seed-db.sh
-#   PG_SHARED_BUFFERS=8GB PG_EFFECTIVE_CACHE_SIZE=24GB ./infra/host-setup/seed-db.sh   # defaults shown
+#   PG_SHARED_BUFFERS=2GB PG_EFFECTIVE_CACHE_SIZE=6GB ./infra/host-setup/seed-db.sh   # defaults shown (8 GB db host, = db/postgresql.conf)
 #
 # Wipe and reseed: ssh ubuntu@<db> 'cd ~/bench && docker compose -f db/compose.yml down -v', then re-run.
 set -euo pipefail
@@ -12,8 +12,8 @@ set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
 load_outputs
-SHARED_BUFFERS="${PG_SHARED_BUFFERS:-8GB}"
-CACHE_SIZE="${PG_EFFECTIVE_CACHE_SIZE:-24GB}"
+SHARED_BUFFERS="${PG_SHARED_BUFFERS:-2GB}"
+CACHE_SIZE="${PG_EFFECTIVE_CACHE_SIZE:-6GB}"
 
 log "db: starting Postgres (shared_buffers=$SHARED_BUFFERS, effective_cache_size=$CACHE_SIZE) and waiting for the seed"
 rbash db "$REMOTE_REPO" "$SHARED_BUFFERS" "$CACHE_SIZE" <<'EOF'

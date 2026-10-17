@@ -8,7 +8,8 @@
 #   1. test JWT key pair: generate locally if missing (k6/data/jwt/gen-keys.sh)
 #   2. wait for SSH + cloud-init (bootstrap.sh) on all hosts
 #   3. rsync the repo to /home/ubuntu/bench on every host (git-ignored files skipped, except
-#      k6/data/jwt/public.pem everywhere and private.pem on loadgen only; results/ is never touched)
+#      k6/data/jwt/public.pem everywhere and private.pem on loadgen only; results/ is never touched);
+#      loadgen signs fresh test 9 tokens (k6/data/jwt/tokens.json) when missing or older than 7 days
 #   4. intra-cluster SSH: loadgen gets its own key, app/db/loadgen accept it (runner -> hosts)
 #   5. loadgen: runner/hosts.toml (terraform output hosts_toml) + Prometheus file_sd targets
 #   6. start exporters on all hosts, the downstream mock on db, Prometheus + Grafana on loadgen
@@ -66,6 +67,13 @@ for role in app loadgen; do
   [[ "$remote_sha" == "$local_pub_sha" ]] || die "$role: k6/data/jwt/public.pem differs from local copy"
 done
 rssh loadgen "test -f $REMOTE_REPO/k6/data/jwt/private.pem" || die "loadgen: private.pem missing"
+# Test 9 tokens (git-ignored, valid 30 days): signed on loadgen with the key just synced, renewed
+# when older than 7 days so a session never runs on tokens that expire mid-run.
+rbash loadgen "$REMOTE_REPO" <<'EOF'
+set -euo pipefail
+cd "$1"
+if [[ -z "$(find k6/data/jwt/tokens.json -mtime -7 2>/dev/null)" ]]; then python3 k6/data/gen-tokens.py; fi
+EOF
 
 # ------------------------------------------------------------ 4. intra-cluster SSH
 log "loadgen: cluster SSH key"

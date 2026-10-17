@@ -33,7 +33,7 @@ Log: `/var/log/cloud-init-output.log`. Re-run by hand: `sudo /usr/local/sbin/ben
 
 1. Generates the test JWT pair locally if missing (`k6/data/jwt/gen-keys.sh`).
 2. Waits for SSH, cloud-init and the bootstrap marker on all hosts.
-3. Rsyncs the repo to `/home/ubuntu/bench` on every host, skipping git-ignored files (`target/`, Terraform state, ...) except `k6/data/jwt/public.pem` (all hosts) and `private.pem` (loadgen only). `results/` and `runner/hosts.toml` on the hosts are never overwritten. No `--delete`: files removed locally stay on the hosts. Checks that `public.pem` on app and loadgen matches the local one.
+3. Rsyncs the repo to `/home/ubuntu/bench` on every host, skipping git-ignored files (`target/`, Terraform state, ...) except `k6/data/jwt/public.pem` (all hosts) and `private.pem` (loadgen only). `results/` and `runner/hosts.toml` on the hosts are never overwritten. No `--delete`: files removed locally stay on the hosts. Checks that `public.pem` on app and loadgen matches the local one. On loadgen, signs fresh test 9 tokens (`k6/data/gen-tokens.py` → `k6/data/jwt/tokens.json`, git-ignored, valid 30 days) when missing or older than 7 days.
 4. Sets up intra-cluster SSH (below).
 5. Writes `runner/hosts.toml` on loadgen from `terraform output hosts_toml` and runs `monitoring/prometheus/gen-targets.sh APP_IP DB_IP LOADGEN_IP`.
 6. Starts `monitoring/exporters/{app,db,loadgen}.yml`, `downstream/compose.yml` on db, and `monitoring/compose.yml` on loadgen with `GRAFANA_ADMIN_PASSWORD`, `GRAFANA_PUBLIC_VIEW` and `MONITORING_CPUSET` (default `14-15`).
@@ -47,7 +47,7 @@ Postgres is not started by deploy; `seed-db.sh` does that.
 
 ## seed-db.sh
 
-Starts `db/compose.yml` on db with `PG_SHARED_BUFFERS=8GB PG_EFFECTIVE_CACHE_SIZE=24GB` (override via the same env vars locally), waits until `bench` answers over TCP and the container is healthy (TCP matters: during the init scripts the entrypoint's temporary server listens on the Unix socket only), then prints the `bench*` databases, row counts per table, effective settings and DB size, and checks that loadgen reaches Postgres on the private IP. With an existing `bench-pgdata` volume it only restarts the container. Wipe: `docker compose -f db/compose.yml down -v` on db.
+Starts `db/compose.yml` on db with `PG_SHARED_BUFFERS=2GB PG_EFFECTIVE_CACHE_SIZE=6GB` (the 8 GB `c7a.xlarge`, same as `db/postgresql.conf`) (override via the same env vars locally), waits until `bench` answers over TCP and the container is healthy (TCP matters: during the init scripts the entrypoint's temporary server listens on the Unix socket only), then prints the `bench*` databases, row counts per table, effective settings and DB size, and checks that loadgen reaches Postgres on the private IP. With an existing `bench-pgdata` volume it only restarts the container. Wipe: `docker compose -f db/compose.yml down -v` on db.
 
 ## build-images.sh
 
@@ -80,6 +80,6 @@ The ids are local image ids (`docker image inspect .Id`, the config digest): ima
 | `BENCH_TF_OUTPUT_JSON` | all | Use a saved `terraform output -json` file instead of calling Terraform |
 | `BENCH_SSH_KEY` | all | Operator private key (default: ssh-agent / `~/.ssh` defaults) |
 | `MONITORING_CPUSET` | deploy | Cores for Prometheus + Grafana on loadgen, default `14-15` |
-| `PG_SHARED_BUFFERS`, `PG_EFFECTIVE_CACHE_SIZE` | seed-db | Default `8GB`, `24GB` |
+| `PG_SHARED_BUFFERS`, `PG_EFFECTIVE_CACHE_SIZE` | seed-db | Default `2GB`, `6GB` |
 
 Operator-side host keys are pinned per deployment in `infra/host-setup/.state/known_hosts-<loadgen-instance-id>` (git-ignored), because AWS recycles public IPs between sessions.
