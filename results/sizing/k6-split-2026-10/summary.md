@@ -42,3 +42,17 @@ The first implementation pinned each process to its own slice of cores 0-13 (row
 ## Merging percentiles
 
 Percentiles of different processes can't be averaged. A percentile of the combined requests lies between the processes' own values (the combined distribution is a mixture), so the runner reports the highest process value: an upper bound. Every process sends the same request mix at the same rate, so the bound is tight: the process spread above is 1-4% at 15-40k. `p99_spread_ms` is kept in every merged step file (`*.merged.json`).
+
+## Follow-up: VU pool and garbage collector (same day)
+
+The first Node campaign run stopped at test 2, 22,387 req/s: 37 dropped iterations (0.006%) at a step that passed (p99 27 ms in the measure window). In the settle phase Node had stalled for up to 169 ms (settle-tail p99 101 ms); each k6 process had VUs pre-allocated for 100 ms (1,120 at 11.2k req/s), so k6 started VUs mid-step (`vus_max` 1,120 → 1,129) and dropped iterations meanwhile. k6 counts drops over the whole run, so the pool has to absorb stalls of an app that still passes.
+
+| Pool (pre-allocated) | GOGC | 25k | 40k | 64k | k6 RSS peak (all processes) |
+|---|---|---|---|---|---|
+| 100 ms (before) | off | | 0 dropped, p99 1.09 ms | 0-101 dropped (calibration) | 15.1 GiB |
+| 500 ms | off | 0, p99 1.02 ms | 0, p99 **71.5 ms** | 74,841 dropped | 15.1-15.5 GiB |
+| 250 ms | off | 0, p99 0.32 ms | 0, p99 4.59 ms | 5,183 dropped | 15.0-15.5 GiB |
+| **250 ms** | **200** | | **0, p99 1.49 ms** | 831 dropped | **7.1-11.3 GiB** |
+| 250 ms | 400 | | 0, p99 1.40 ms | 604 dropped | 10.0-12.6 GiB |
+
+With `GOGC=off` k6 makes ~13 KB of garbage per request and reaches its 16 GiB `GOMEMLIMIT` within one 45 s step at any of these rates, then collects constantly near the limit; a larger pool leaves less headroom and stalls k6 (500 ms: p99 71 ms at 40k). `GOGC=off` was chosen on a 2-3 core Graviton loadgen (results/sizing/k6-2026-10); on 14 cores the default-style collector runs on idle cores. **Chosen: 250 ms pool (the p99 SLO; `maxVUs` stays 500 ms) and `GOGC=200`**, which also keeps the 60 s warm-up and 120 s common-load runs away from the limit. 64k is at the loadgen's edge with every setting (66% CPU); the clean ceiling is measured in calibration. Rows: `split.jsonl` (`vus500-*`, `pool*`).

@@ -21,7 +21,7 @@ Load scripts for the eight tests (numbered 2–9; test 1 was removed) ([docs/02-
 - **`MODE=step`** (default): one `constant-arrival-rate` scenario for `SETTLE_S + MEASURE_S`. Each iteration tags itself `phase=settle`, `settle_tail` (the last 5 s of settle) or `measure` from the elapsed time. One scenario, not two, so no new VUs or connections open at the start of the measure window. Smoke, probe stages, recovery probes and the common-load run are all steps with different durations.
 - **`MODE=warmup`**: `ramping-arrival-rate` from `FROM_RATE` to `TO_RATE` over `DURATION_S`.
 - Rates are per second and may be fractional (test 9 sessions/s); internally they are expressed per 10 s.
-- VUs: pre-allocated for 100 ms per request, at most 500 ms per request.
+- VUs: pre-allocated for 250 ms per request (the p99 SLO), at most 500 ms per request.
 - Connections are reused across iterations (09 R10). Bodies are discarded except in smoke runs (`CHECK_BODY=1`) and where test 9 needs data from a response.
 - Every request has a fixed `name` tag (`/products/{id}`); `systemTags` excludes `url` (09 R11).
 - Pass-through thresholds make the `phase:measure`, `phase:settle_tail` and per-endpoint submetrics appear in the summary (09 R12). The runner judges the numbers; k6's exit code is ignored.

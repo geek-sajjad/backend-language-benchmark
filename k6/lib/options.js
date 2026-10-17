@@ -2,12 +2,14 @@
 import exec from 'k6/execution';
 import { MODE, RATE, SETTLE_S, SETTLE_TAIL_S, MEASURE_S, FROM_RATE, TO_RATE, DURATION_S, SLO, CHECK_BODY } from './env.js';
 
-// VUs needed ≈ rate × iteration time. Pre-allocate for 100 ms per request, allow up to
-// 500 ms per request. A step that would need more is already far beyond the p99 SLO.
+// VUs needed ≈ rate × iteration time. Pre-allocate for 250 ms per request (the p99 SLO), allow
+// up to 500 ms. A VU started mid-step is slow to initialise and k6 drops iterations meanwhile:
+// with a 100 ms pool, a 169 ms app stall in the settle phase (Node, test 2, 22k req/s)
+// invalidated a passing step. Pre-allocating all 500 ms cost too much memory (~1 MB per VU).
 function vus(rate, requestsPerIteration) {
   const perIteration = requestsPerIteration;
   return {
-    preAllocatedVUs: Math.max(10, Math.ceil(rate * perIteration * 0.1)),
+    preAllocatedVUs: Math.max(10, Math.ceil(rate * perIteration * 0.25)),
     maxVUs: Math.max(100, Math.ceil(rate * perIteration * 0.5)),
   };
 }
