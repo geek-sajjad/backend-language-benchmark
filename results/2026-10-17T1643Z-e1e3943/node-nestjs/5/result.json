@@ -1,0 +1,333 @@
+{
+  "stack": "node-nestjs",
+  "test": 5,
+  "attempt": 1,
+  "startup_s": 1.44,
+  "estimate": 4000.0,
+  "probe": [
+    {
+      "rate": 500,
+      "ok": true,
+      "p95_ms": 3.256807,
+      "p99_ms": 3.83507,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 1000.0,
+      "ok": true,
+      "p95_ms": 3.8013419499999994,
+      "p99_ms": 4.256620099999998,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 2000.0,
+      "ok": true,
+      "p95_ms": 5.051646,
+      "p99_ms": 7.52143,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 4000.0,
+      "ok": true,
+      "p95_ms": 18.82705825,
+      "p99_ms": 31.170712500000093,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 8000.0,
+      "ok": false,
+      "p95_ms": 949.8232468,
+      "p99_ms": 984.2420725999999,
+      "error_rate": 0.0,
+      "dropped_iterations": 29773
+    }
+  ],
+  "probe_recovery": {
+    "recovery_s": 17.4,
+    "recovery_restart": false
+  },
+  "steps": [
+    {
+      "rate": 3200,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259079.5641792,
+      "mode": "step",
+      "requests": 96005,
+      "iterations": 96005,
+      "measured_rps": 3200.17,
+      "p50_ms": 4.081142,
+      "p95_ms": 7.129429200000001,
+      "p99_ms": 12.364833360000022,
+      "max_ms": 37.507096,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 14.396781799999994,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 2.2357249152483907,
+        "app_rss_mb": 1311.8,
+        "app_host_cpu": 0.6160344827585975,
+        "db_cpu": 0.7321551724137956,
+        "loadgen_cpu": 0.0474353448275906,
+        "pg_tps": 3121.8275862068963
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.6,
+      "recovery_restart": false
+    },
+    {
+      "rate": 3680,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259145.9517288,
+      "mode": "step",
+      "requests": 110404,
+      "iterations": 110404,
+      "measured_rps": 3680.13,
+      "p50_ms": 5.006482,
+      "p95_ms": 10.910340499999991,
+      "p99_ms": 19.600154000000014,
+      "max_ms": 38.805694,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 21.27106282000002,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 2.5523247404709606,
+        "app_rss_mb": 1281.5,
+        "app_host_cpu": 0.6971551724137843,
+        "db_cpu": 0.8093965517241486,
+        "loadgen_cpu": 0.05359913793103621,
+        "pg_tps": 3620.8965517241377
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.7,
+      "recovery_restart": false
+    },
+    {
+      "rate": 4232,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259212.3399265,
+      "mode": "step",
+      "requests": 126967,
+      "iterations": 126967,
+      "measured_rps": 4232.23,
+      "p50_ms": 6.639971,
+      "p95_ms": 21.7328703,
+      "p99_ms": 35.35023179999998,
+      "max_ms": 216.120079,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 29.173816399999982,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 2.9608601669922927,
+        "app_rss_mb": 1283.3,
+        "app_host_cpu": 0.7906034482758388,
+        "db_cpu": 0.890258620689659,
+        "loadgen_cpu": 0.06209051724137038,
+        "pg_tps": 4145.275862068966
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.8,
+      "recovery_restart": false
+    },
+    {
+      "rate": 4867,
+      "verdict": "fail",
+      "reasons": [
+        "slo",
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259278.835785,
+      "mode": "step",
+      "requests": 145171,
+      "iterations": 145171,
+      "measured_rps": 4839.03,
+      "p50_ms": 311.067949,
+      "p95_ms": 393.04103899999996,
+      "p99_ms": 414.68904699999996,
+      "max_ms": 473.758678,
+      "error_rate": 0,
+      "dropped_iterations": 1737,
+      "settle_tail_p99_ms": 348.53187478,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 3.3840493956772053,
+        "app_rss_mb": 1353.5,
+        "app_host_cpu": 0.9059482758620545,
+        "db_cpu": 0.9740517241379448,
+        "loadgen_cpu": 0.07564655172414658,
+        "pg_tps": 4773.620689655172
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.9,
+      "recovery_restart": false
+    },
+    {
+      "rate": 4550,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259345.9958577,
+      "mode": "step",
+      "requests": 136506,
+      "iterations": 136506,
+      "measured_rps": 4550.2,
+      "p50_ms": 9.864904,
+      "p95_ms": 38.96384725,
+      "p99_ms": 56.7441309000002,
+      "max_ms": 102.360388,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 27.51986,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 3.2125992128820844,
+        "app_rss_mb": 1374.9,
+        "app_host_cpu": 0.8461206896551693,
+        "db_cpu": 0.9415517241379411,
+        "loadgen_cpu": 0.06760775862069923,
+        "pg_tps": 4445.241379310345
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 17.2,
+      "recovery_restart": false
+    },
+    {
+      "rate": 4708,
+      "verdict": "fail",
+      "reasons": [
+        "slo",
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259412.8688207,
+      "mode": "step",
+      "requests": 141243,
+      "iterations": 141243,
+      "measured_rps": 4708.1,
+      "p50_ms": 14.859471,
+      "p95_ms": 102.47690619999999,
+      "p99_ms": 123.95742159999985,
+      "max_ms": 175.48986,
+      "error_rate": 0,
+      "dropped_iterations": 269,
+      "settle_tail_p99_ms": 135.85035779999998,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 3.2719522657871196,
+        "app_rss_mb": 1386.5,
+        "app_host_cpu": 0.8643103448275881,
+        "db_cpu": 0.9626724137931197,
+        "loadgen_cpu": 0.0702801724137826,
+        "pg_tps": 4688.758620689655
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 17.3,
+      "recovery_restart": false
+    },
+    {
+      "rate": 4550,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1792259479.8707132,
+      "mode": "step",
+      "requests": 136505,
+      "iterations": 136505,
+      "measured_rps": 4550.17,
+      "p50_ms": 8.517557,
+      "p95_ms": 37.9669378,
+      "p99_ms": 70.11379159999984,
+      "max_ms": 127.990153,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 138.59255520999992,
+      "checks_failed": 0,
+      "metrics": {
+        "app_cpu_cores": 3.145392925023218,
+        "app_rss_mb": 1375.1,
+        "app_host_cpu": 0.8362068965517084,
+        "db_cpu": 0.9322413793103554,
+        "loadgen_cpu": 0.06730603448275774,
+        "pg_tps": 4490.206896551724
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 17.2,
+      "recovery_restart": false,
+      "confirmation": true
+    }
+  ],
+  "converged": true,
+  "confirmed": true,
+  "events": [],
+  "image": "sha256:b7ae29b2e24f763f0bfe504940cd1b96851d008603e6e2e3fba5c9a63158d888",
+  "peak_rss_search_mb": 1386.5,
+  "status": "ok",
+  "max_rps": 4550,
+  "best_step": 4550,
+  "db_bound": true,
+  "settle_unstable": true,
+  "db_bound_steps": 7
+}

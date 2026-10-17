@@ -1,0 +1,307 @@
+{
+  "campaign_id": "2026-10-17T1643Z-e1e3943",
+  "created": "2026-10-17T16:43:37.547169+00:00",
+  "mode": "aws",
+  "git_sha": "e1e3943968aaa0780f3f6e4c274b86442281bebc",
+  "git_dirty": false,
+  "config_sha256": "9246c1bb7d56c3b46dd2fca5299116e638f4ac279fc3fc5b93cab7337c475252",
+  "shuffle_seed": 206980261,
+  "stacks": [
+    "node-nestjs"
+  ],
+  "tests": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "hosts": {
+    "app": {
+      "private_ip": "10.42.0.10",
+      "instance_type": "c7a.xlarge",
+      "cpu_model": "AMD EPYC 9R14",
+      "cores": "4",
+      "ami": "ami-0fd9576cca965bd19",
+      "kernel": "7.0.0-1014-aws",
+      "docker": "29.9.1"
+    },
+    "db": {
+      "private_ip": "10.42.0.11",
+      "instance_type": "c7a.xlarge",
+      "cpu_model": "AMD EPYC 9R14",
+      "cores": "4",
+      "ami": "ami-0fd9576cca965bd19",
+      "kernel": "7.0.0-1014-aws",
+      "docker": "29.9.1"
+    },
+    "loadgen": {
+      "private_ip": "10.42.0.12",
+      "instance_type": "c7a.4xlarge",
+      "cpu_model": "AMD EPYC 9R14",
+      "cores": "16",
+      "ami": "ami-0fd9576cca965bd19",
+      "kernel": "7.0.0-1014-aws",
+      "docker": "29.9.1"
+    }
+  },
+  "k6": "k6 v2.2.0 (commit/00a9a1b7f5, go1.26.5, linux/amd64)",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "calibration": {
+    "created": "2026-10-17T16:23:26.984238+00:00",
+    "mode": "aws",
+    "db_ceiling": {
+      "2": {
+        "tps": 128961.194506,
+        "clients": 64,
+        "seconds": 30,
+        "db_cpu": 0.9998958333333311
+      },
+      "3": {
+        "tps": 12750.013658,
+        "clients": 64,
+        "seconds": 30,
+        "db_cpu": 1.0
+      },
+      "4": {
+        "tps": 14467.416685,
+        "clients": 64,
+        "seconds": 30,
+        "db_cpu": 1.0
+      },
+      "5": {
+        "tps": 8789.752625,
+        "clients": 64,
+        "seconds": 30,
+        "db_cpu": 0.9878124999999803
+      }
+    },
+    "k6_ceiling": {
+      "ceiling_rps": 55299.6,
+      "stages": [
+        {
+          "rate": 1000,
+          "ok": true,
+          "measured_rps": 1000.03,
+          "p99_ms": 0.15766,
+          "dropped": 0,
+          "loadgen_cpu": 0.0197629310344849
+        },
+        {
+          "rate": 2000.0,
+          "ok": true,
+          "measured_rps": 2000.0,
+          "p99_ms": 0.16400109000000002,
+          "dropped": 0,
+          "loadgen_cpu": 0.026163793103448962
+        },
+        {
+          "rate": 4000.0,
+          "ok": true,
+          "measured_rps": 4000.2,
+          "p99_ms": 0.18566049999999998,
+          "dropped": 0,
+          "loadgen_cpu": 0.04474137931034727
+        },
+        {
+          "rate": 8000.0,
+          "ok": true,
+          "measured_rps": 8000.4,
+          "p99_ms": 0.2002604,
+          "dropped": 0,
+          "loadgen_cpu": 0.09286637931033925
+        },
+        {
+          "rate": 16000.0,
+          "ok": true,
+          "measured_rps": 16000.37,
+          "p99_ms": 0.22675070000000003,
+          "dropped": 0,
+          "loadgen_cpu": 0.19101293103448103
+        },
+        {
+          "rate": 32000.0,
+          "ok": true,
+          "measured_rps": 32000.37,
+          "p99_ms": 0.44643220000000017,
+          "dropped": 0,
+          "loadgen_cpu": 0.41521551724137895
+        },
+        {
+          "rate": 64000.0,
+          "ok": false,
+          "measured_rps": 64001.3,
+          "p99_ms": 6.879900209999971,
+          "dropped": 166,
+          "loadgen_cpu": 0.7203017241379335
+        },
+        {
+          "rate": 38400.443999999996,
+          "ok": true,
+          "measured_rps": 38401.37,
+          "p99_ms": 0.891894,
+          "dropped": 0,
+          "loadgen_cpu": 0.5095689655172386
+        },
+        {
+          "rate": 46080.53279999999,
+          "ok": true,
+          "measured_rps": 46082.0,
+          "p99_ms": 2.144398600000006,
+          "dropped": 0,
+          "loadgen_cpu": 0.5837284482758589
+        },
+        {
+          "rate": 55296.639359999994,
+          "ok": true,
+          "measured_rps": 55299.6,
+          "p99_ms": 7.586633539999993,
+          "dropped": 0,
+          "loadgen_cpu": 0.6770689655172293
+        },
+        {
+          "rate": 66355.967232,
+          "ok": false,
+          "measured_rps": 66360.2,
+          "p99_ms": 9.398009510000001,
+          "dropped": 498,
+          "loadgen_cpu": 0.7382758620689645
+        }
+      ]
+    },
+    "downstream_ceiling": {
+      "ceiling_rps": 46083.17,
+      "stages": [
+        {
+          "rate": 1000,
+          "ok": true,
+          "measured_rps": 1000.03,
+          "p99_ms": 51.131977,
+          "dropped": 0,
+          "loadgen_cpu": 0.015711206896557584
+        },
+        {
+          "rate": 2000.0,
+          "ok": true,
+          "measured_rps": 2000.03,
+          "p99_ms": 50.997998,
+          "dropped": 0,
+          "loadgen_cpu": 0.025280172413805868
+        },
+        {
+          "rate": 4000.0,
+          "ok": true,
+          "measured_rps": 4000.07,
+          "p99_ms": 51.0713754,
+          "dropped": 0,
+          "loadgen_cpu": 0.04702586206896686
+        },
+        {
+          "rate": 8000.0,
+          "ok": true,
+          "measured_rps": 8000.53,
+          "p99_ms": 51.11368025,
+          "dropped": 0,
+          "loadgen_cpu": 0.09702586206896058
+        },
+        {
+          "rate": 16000.0,
+          "ok": true,
+          "measured_rps": 16000.4,
+          "p99_ms": 51.150115,
+          "dropped": 0,
+          "loadgen_cpu": 0.18646551724138227
+        },
+        {
+          "rate": 32000.0,
+          "ok": true,
+          "measured_rps": 32000.9,
+          "p99_ms": 52.86911132000002,
+          "dropped": 0,
+          "loadgen_cpu": 0.36911637931035557
+        },
+        {
+          "rate": 64000.0,
+          "ok": false,
+          "measured_rps": 64003.27,
+          "p99_ms": 86.66922427000002,
+          "dropped": 750,
+          "loadgen_cpu": 0.702823275862076
+        },
+        {
+          "rate": 38401.08,
+          "ok": true,
+          "measured_rps": 38402.7,
+          "p99_ms": 57.23116539999997,
+          "dropped": 0,
+          "loadgen_cpu": 0.44131465517241864
+        },
+        {
+          "rate": 46081.296,
+          "ok": true,
+          "measured_rps": 46083.17,
+          "p99_ms": 62.638789459999984,
+          "dropped": 0,
+          "loadgen_cpu": 0.529633620689659
+        },
+        {
+          "rate": 55297.5552,
+          "ok": false,
+          "measured_rps": 55299.8,
+          "p99_ms": 73.9042101,
+          "dropped": 229,
+          "loadgen_cpu": 0.6337499999999969
+        }
+      ]
+    }
+  },
+  "sessions": [
+    {
+      "n": 1,
+      "kind": "run",
+      "started": "2026-10-17T16:43:46.435449+00:00",
+      "stacks": [
+        "node-nestjs"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-08a6c3d60a87cc5e8",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "e65f6360-9f7d-4f07-becb-6f3ff91b2d9c"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-02e4eb4be38f5ae91",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "5e0e31f7-6621-4709-a6c6-bb77c6c4ddf9"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-005d88e3992c5f89c",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "f22c3c1c-8078-43dc-bddc-f59d4c58363e"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"23f0e4c6d7fda713c9cf441a351b1d1b6b59d413\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"node-nestjs\": {\n      \"build_s\": 19,\n      \"built_at\": \"2026-10-17T14:00:10+00:00\",\n      \"compose\": \"stacks/node-nestjs/compose.yml\",\n      \"created\": \"2026-10-17T14:00:05.830826459Z\",\n      \"images\": {\n        \"bench-node-nestjs:local\": \"sha256:b7ae29b2e24f763f0bfe504940cd1b96851d008603e6e2e3fba5c9a63158d888\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-10-17T14:00:10+00:00\"\n}"
+    }
+  ]
+}
