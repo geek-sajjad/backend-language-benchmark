@@ -102,6 +102,10 @@ recreate_db_tests = [5, 9]  # only write tests change the DB; read tests keep th
 [loadgen]
 count = 1                  # prefer resizing the one loadgen (c7a.8xlarge) over raising this
 k6_cpuset = "0-1"         # Prometheus + Grafana pinned to 14-15 on the same host
+# One k6 process drops iterations above ~20k req/s with most cores idle (per-process metrics
+# pipeline; results/sizing/k6-split-2026-10). Steps above this rate run as N processes, each
+# with RATE/N, all on k6_cpuset, started together; summaries merged (runner/benchlib/k6.py).
+k6_max_rate_per_process = 12000
 # Go GC for k6: off, collecting only near the memory limit. With the default GC, k6 dropped
 # iterations at 40-60% CPU from GC stalls; off: 0 drops and ~10% less CPU per request
 # (results/sizing/k6-2026-10). The limit leaves room for Prometheus on the 32 GiB loadgen.

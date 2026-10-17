@@ -96,7 +96,9 @@ results/
     <stack>/
       <test>/
         search.json                     # every step: rate, verdict, p50/p95/p99, err%, rps achieved
-        steps/<rate>.summary.json       # raw k6 summary export
+        steps/<rate>.summary.json       # raw k6 summary export (one k6 process)
+        steps/<rate>.p<i>.summary.json  # instead, per process, when the step ran as N k6 processes
+        steps/<rate>.merged.json        #   plus the merged numbers, k6_processes and p99_spread_ms
         steps/<rate>.metrics.json       # Prometheus snapshot for the step window
         steps/<rate>.ethtool.json       # before/after counters on app, db, loadgen
         app.log                         # container stdout/stderr (warnings/errors only)

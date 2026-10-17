@@ -65,7 +65,7 @@ Each (stack, test) pair: reset (restart the container; tests 5 and 9 also recrea
 | `bench.py` | CLI |
 | `benchlib/config.py` | `bench.toml` access, test scripts |
 | `benchlib/cluster.py` | Hosts (local or SSH), the stack container, the database, ethtool |
-| `benchlib/k6.py` | Runs k6, parses the summary (`http_reqs{phase:measure}.count ÷ measure_s`, never the submetric's `rate`) |
+| `benchlib/k6.py` | Runs k6, parses the summary (`http_reqs{phase:measure}.count ÷ measure_s`, never the submetric's `rate`). A step above `k6_max_rate_per_process` runs as N processes (paused start, resumed together; extra tag `k6proc`), merged: counts summed, percentiles = highest process value ([docs/04](../docs/04-methodology.md#proving-the-load-generator-is-not-the-bottleneck)) |
 | `benchlib/prom.py` | Prometheus window queries (expressions in `monitoring/README.md`) |
 | `benchlib/search.py` | The per-pair search, verdicts, recovery |
 | `benchlib/campaign.py` | Manifest and sessions, stack-by-stack order, hardware-spec check, resume, common load, `results.csv` |
