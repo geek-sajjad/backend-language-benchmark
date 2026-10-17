@@ -22,15 +22,19 @@ def pgbench(ctx, test, seconds=30, clients=64):
 
 
 def ramp(ctx, label, base_url, start_rate, max_rate, out_dir):
-    """Doubling 10 s stages, then ×1.2, until the SLO breaks, iterations are dropped or the
-    loadgen CPU reaches the validity limit. Returns the highest clean measured rate."""
+    """Doubling stages, then ×1.2, until the SLO breaks, iterations are dropped or the loadgen
+    CPU reaches the validity limit. Returns the highest clean measured rate. Every stage is a
+    full-length step (settle_s + measure_s from [search]): 10 s stages counted k6's start-up
+    hiccups as drops and put the ceiling at 46k where real steps were clean at 55k+."""
     limit = ctx.cfg["validity"]["max_loadgen_cpu"]
+    settle, measure = ctx.cfg["search"]["settle_s"], ctx.cfg["search"]["measure_s"]
     rate, factor, best, stages = start_rate, 2.0, None, []
     while rate <= max_rate:
         t0 = time.time()
-        n = ctx.k6.run(0, out_dir / f"{label}-{int(rate)}.summary.json", rate=rate, settle_s=5, measure_s=5,
-                       base_url=base_url, script="00-echo.js", tags={"testid": f"calibrate/{label}/{int(rate)}"})
-        cpu = ctx.prom.window(t0 + 10, 5)["loadgen_cpu"]
+        n = ctx.k6.run(0, out_dir / f"{label}-{int(rate)}.summary.json", rate=rate, settle_s=settle,
+                       measure_s=measure, base_url=base_url, script="00-echo.js",
+                       tags={"testid": f"calibrate/{label}/{int(rate)}"})
+        cpu = ctx.prom.window(t0 + settle + measure, measure)["loadgen_cpu"]
         slo = ctx.cfg["slo"]
         ok = (n["dropped_iterations"] == 0 and n["error_rate"] < slo["error_rate"]
               and n["p99_ms"] is not None and n["p99_ms"] < slo["p99_ms"] and (cpu is None or cpu < limit))

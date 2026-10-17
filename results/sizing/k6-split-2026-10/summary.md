@@ -56,3 +56,14 @@ The first Node campaign run stopped at test 2, 22,387 req/s: 37 dropped iteratio
 | 250 ms | 400 | | 0, p99 1.40 ms | 604 dropped | 10.0-12.6 GiB |
 
 With `GOGC=off` k6 makes ~13 KB of garbage per request and reaches its 16 GiB `GOMEMLIMIT` within one 45 s step at any of these rates, then collects constantly near the limit; a larger pool leaves less headroom and stalls k6 (500 ms: p99 71 ms at 40k). `GOGC=off` was chosen on a 2-3 core Graviton loadgen (results/sizing/k6-2026-10); on 14 cores the default-style collector runs on idle cores. **Chosen: 250 ms pool (the p99 SLO; `maxVUs` stays 500 ms) and `GOGC=200`**, which also keeps the 60 s warm-up and 120 s common-load runs away from the limit. 64k is at the loadgen's edge with every setting (66% CPU); the clean ceiling is measured in calibration. Rows: `split.jsonl` (`vus500-*`, `pool*`).
+
+## Follow-up: per-process cap and the calibration ramp
+
+`bench.py calibrate` with the settings above put the k6 ceiling at 46k: its ramp used 10 s stages (5 s settle + 5 s measure), so k6's start-up hiccups counted as drops. Full-length steps (15 + 30 s, `per6k/`):
+
+| Per-process cap | 46k | 55k | 60k | 64k |
+|---|---|---|---|---|
+| 12,000 | 0 dropped, 48% CPU | 0, 58% | 758 dropped, 62% | 687 dropped, 66% |
+| **6,000** | 0, 59% | 0, 67% | | **0, 72%** |
+
+App host CPU (echo server only) at 46/55/64k: 58/64/69%. **Chosen: 6,000 per process**: clean until the 70% loadgen CPU limit (~60-64k), about what the 4-core app host can serve at all, so the `c7a.4xlarge` stays and `c7a.8xlarge` isn't needed. The calibration ramp now uses full-length stages.

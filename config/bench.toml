@@ -105,7 +105,8 @@ k6_cpuset = "0-13"         # Prometheus + Grafana pinned to 14-15 on the same ho
 # One k6 process drops iterations above ~20k req/s with most cores idle (per-process metrics
 # pipeline; results/sizing/k6-split-2026-10). Steps above this rate run as N processes, each
 # with RATE/N, all on k6_cpuset, started together; summaries merged (runner/benchlib/k6.py).
-k6_max_rate_per_process = 12000
+# 6000: clean to 64k req/s on the c7a.4xlarge (12000 dropped iterations from 60k).
+k6_max_rate_per_process = 6000
 # Go GC for k6: GOGC=200 plus a memory limit. "off" (results/sizing/k6-2026-10, Graviton, 2-3
 # cores) filled the limit within one 45 s step on the c7a loadgen (~13 KB of garbage per
 # request) and then collected constantly near it, stalling k6 at high rates; 200 keeps k6 at
