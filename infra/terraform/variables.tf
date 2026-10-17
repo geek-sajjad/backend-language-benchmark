@@ -23,14 +23,15 @@ variable "db_type" {
 }
 
 variable "loadgen_type" {
-  description = "Instance type of the loadgen host (k6, runner, Prometheus, Grafana). Graviton (arm64): the loadgen isn't measured, and 16 Graviton cores cost less on spot than 8 AMD cores. Upsize to c7g.8xlarge if calibration demands it."
+  description = "Instance type of the loadgen host (k6, runner, Prometheus, Grafana). Same AMD c7a family as app and db (16 cores, no SMT): eu-north-1 spot had no Graviton capacity. Upsize to c7a.8xlarge if calibration demands it."
   type        = string
-  default     = "c7g.4xlarge"
+  default     = "c7a.4xlarge"
 }
 
 variable "operator_ip" {
-  description = "CIDR allowed to SSH (22) into all hosts, e.g. \"203.0.113.7/32\"."
+  description = "CIDR allowed to SSH (22) into all hosts. Default 0.0.0.0/0: the operator's VPN changes its exit IP often, and login is key-only. Narrow it, e.g. \"203.0.113.7/32\", from a fixed IP."
   type        = string
+  default     = "0.0.0.0/0"
 
   validation {
     condition     = can(cidrhost(var.operator_ip, 0))
@@ -74,7 +75,7 @@ variable "ami_id" {
 }
 
 variable "ami_id_arm64" {
-  description = "AMI for arm64 (Graviton) hosts, i.e. loadgen. Empty = latest Canonical Ubuntu 24.04 LTS arm64 (hvm-ssd-gp3). Pin it together with ami_id, from the same Canonical release."
+  description = "AMI for arm64 (Graviton) hosts. Unused with the default all-x86 lab; only needed if loadgen_type is a Graviton type. Empty = latest Canonical Ubuntu 24.04 LTS arm64 (hvm-ssd-gp3)."
   type        = string
   default     = ""
 }

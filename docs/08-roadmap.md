@@ -25,7 +25,7 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 | D1 | PHP runtime | **PHP-FPM + Nginx** in the main round (most deployed; Laravel's documented default) | Laravel Octane (FrankenPHP). Viewers will ask for it, so it's a good candidate for a bonus segment |
 | D2 | Go stack | **Decided 2026-10-14: Gin + GORM** (consistent "framework + ORM" rule); implemented in `stacks/go-gin` | stdlib `net/http` + `pgx` + `sqlc` (what many Go devs consider idiomatic) |
 | D3 | Peak RSS window | **At common load** (same work for every stack); also report the peak during the search | During the max-rate search, as the guide literally says |
-| D4 | AWS region | **eu-north-1** (cheapest spot for `c7a`/`m7a`/`c7g` as of 2026-10-10) | Any region with `m7a`/`c7a`/`c7g`; must not change mid-campaign |
+| D4 | AWS region | **eu-north-1** (cheapest spot for `c7a`/`m7a` as of 2026-10-10; no Graviton spot capacity there, so every host is `c7a`) | Any region with `c7a`; must not change mid-campaign |
 | D5 | "Tuned" bonus round | Plan for it after the main video, using each stack's "potential optimizations" | Skip |
 | D6 | Java concurrency | **MVC + virtual threads** (Spring's recommended path for new apps) | WebFlux + R2DBC |
 | D7 | Downstream delay (test 6) | **50 ms fixed** (leaves 50 ms of the p95 budget) | 20 ms, or jitter (less deterministic) |
@@ -36,7 +36,7 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| k6 can't generate the test 2 / test 6 rates for Rust or Go (test 1, the highest-rate test, was removed for this reason) | Max rate capped by the generator, not the app | k6 helpers optimized (~30% less CPU per request) and Go GC off (no GC stalls; ~146 µs per request, so ~4,800 req/s per k6 core at the 70% limit, ~67k req/s on `c7g.4xlarge`; measured up to 3 cores). Still to check: k6 memory during the longest runs (60 s warm-up, 120 s common load) with GC off. Calibrate with monitoring running; resize loadgen to `c7g.8xlarge` (split across hosts only as a last resort); `dropped_iterations` check; a faster generator for the high-rate tests if k6 is the limit |
+| k6 can't generate the test 2 / test 6 rates for Rust or Go (test 1, the highest-rate test, was removed for this reason) | Max rate capped by the generator, not the app | k6 helpers optimized (~30% less CPU per request) and Go GC off (no GC stalls; ~146 µs per request, so ~4,800 req/s per k6 core at the 70% limit, ~67k req/s on 14 k6 cores; measured on Graviton up to 3 cores, so the `c7a.4xlarge` loadgen's ceiling is measured in calibration). Still to check: k6 memory during the longest runs (60 s warm-up, 120 s common load) with GC off. Calibrate with monitoring running; resize loadgen to `c7a.8xlarge` (split across hosts only as a last resort); `dropped_iterations` check; a faster generator for the high-rate tests if k6 is the limit |
 | Postgres saturates before the fastest stacks (expected on the 4-core db in tests 3–5) | DB-bound scores converge | **Accepted by design**: steps flagged `db_bound` instead of invalid, results marked "DB-limited", DB ceiling drawn on the charts and stated in the video ([04](04-methodology.md#when-postgres-is-the-bottleneck)). The runner flags such steps (`db_bound_tests` in `config/bench.toml`), `results.csv` carries a `db_bound` column and `score.py` lists DB-limited results. `scoring/charts.py` draws the ceiling line on tests 2–5 and hatches DB-limited bars |
 | Network allowances on `c7a.xlarge` (burst, **~1.56 Gbps baseline**, half of the 8-core host the payloads were first sized for) | A network limit makes the step INVALID with no setup fix | Test 7 payload cut from 45 items (~12 KB) to 15 items (~4 KB, ~1.3 Gbps at 40k req/s); ethtool validity check; check test 2/6 packet rate (pps allowance) in calibration |
 | Accusations of unfair config ("you didn't use X!") | Credibility | Selection rule + allowed-config table + "potential optimizations" lists published; each stack's README reviewed by someone fluent in it, if possible |
@@ -45,7 +45,7 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 | Spot interruption (all hosts are spot) | Pause; hardware could change | Runner pauses and saves, continues only on matching hardware (type, CPU model, AMI, kernel); only the interrupted pair is rerun ([06](06-runner-and-results.md#spot-interruptions)). Implemented in `runner/benchlib/spot.py` and `campaign.py`: notice polling every 10 s, `paused.json` + exit 3, hardware-spec check in `resume` and at the start of every session. Tested locally with fake hosts only; not yet exercised on a real interruption |
 | No pilot: `settle_s = 15` and the 5% tie threshold ([09 R8](09-review-findings.md#r8-the-tie-threshold-is-not-grounded-in-measured-noise)) aren't checked on AWS before the campaign | A settle or noise problem only shows up in the scored results | `settle_unstable` is reported per step; the tie threshold is stated as an assumption in the video (the db-sizing pgbench repeats spread 1.9%) |
 | Monitoring (Prometheus + Grafana, public viewers) shares the loadgen host | Viewer bursts steal CPU from k6 | Grafana stopped during scored runs; Prometheus pinned to 2 cores, k6 to the other 14; loadgen CPU < 70% check; k6 calibrated with monitoring as in the campaign |
-| Spot/AZ capacity for `c7a` / `c7g` | Can't provision, or long pauses | Pre-check spot placement scores and price history; pick the AZ with capacity for all three types |
+| Spot/AZ capacity for `c7a` | Can't provision, or long pauses | Pre-check spot placement scores and price history; pick the AZ with capacity for `c7a.xlarge` and `c7a.4xlarge` |
 
 ## Budget estimate (eu-north-1c spot, 2026-10-11; spot prices move, check before each session)
 
@@ -53,22 +53,22 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 |---|---|---|
 | app | c7a.xlarge | 0.057 |
 | db + downstream mock | c7a.xlarge | 0.057 |
-| loadgen + Prometheus (+ Grafana outside scored runs) | c7g.4xlarge (Graviton) | 0.093 |
+| loadgen + Prometheus (+ Grafana outside scored runs) | c7a.4xlarge | 0.135 |
 | 3 public IPv4 + 3 × 50 GB gp3 | | ~0.033 |
-| **Total** | | **≈ $0.24/h** |
+| **Total** | | **≈ $0.28/h** |
 
 | Phase | Hours |
 |---|---|
 | Sessions 1–7, one stack each: provision, deploy, seed ~0.5 h + image build + 8 tests ~1.3 h + collect and destroy ~0.2 h ([06](06-runner-and-results.md#estimated-duration)) | 7 × ~2 = ~14 |
 | Session 8: test 9 common load for all stacks | ~1.5 |
 | Reruns / buffer, only if needed (`resume` reruns only the interrupted pair) | 0–3 |
-| **Total** | **~15.5 h ≈ $3.70 with no reruns, ~18.5 h ≈ $4.40 with the buffer, over 8 days** |
+| **Total** | **~15.5 h ≈ $4.40 with no reruns, ~18.5 h ≈ $5.20 with the buffer, over 8 days** |
 
 Not in any session (decided 2026-10-11): conformance runs once locally; calibration is done manually beforehand; there is no pilot.
 
 No NAT gateway, load balancer, provisioned IOPS or extra volumes. Development happens locally, and AWS is torn down between sessions. Hours while the campaign is paused for a spot interruption cost nothing for the stopped host, but the running hosts and the EBS volumes keep billing: stop the other two hosts too if a pause will be long.
 
-**If calibration forces an upsize:** a `c7g.8xlarge` loadgen adds ~$0.12/h, spot, same date. Decided in calibration, before the scored run. The db is never upsized: a DB-bound result is reported, not fixed.
+**If calibration forces an upsize:** a `c7a.8xlarge` loadgen adds roughly another $0.135/h (about twice the `c7a.4xlarge` price; check the spot price). Decided in calibration, before the scored run. The db is never upsized: a DB-bound result is reported, not fixed.
 
 **What changed from the first estimate (35 h × $4.4/h ≈ $155):**
 
@@ -82,6 +82,7 @@ No NAT gateway, load balancer, provisioned IOPS or extra volumes. Development ha
 | Campaign ~15 h → ~10 h (shorter steps and smoke, 5% bisection, faster probe, fewer DB recreates; see [06](06-runner-and-results.md#estimated-duration)) | −5 h |
 | Calibration + pilot 6 h → 4 h, buffer 14 h → 6 h | −10 h |
 | No conformance or up-front image builds on AWS, calibration done manually beforehand, no pilot (2026-10-11) | −3 h (~20 h → ~17 h with the full buffer) |
+| loadgen Graviton `c7g.4xlarge` → `c7a.4xlarge`: no Graviton spot capacity in eu-north-1 (2026-10-17) | +$0.04/h (→ $0.28/h) |
 | One session per stack plus a common-load session instead of one long session (2026-10-17) | +3.5 h of provisioning, −3 h of buffer (an interruption reruns one pair, not a whole test) |
 
 The app host (`c7a.xlarge`, 4 cores / 8 GB) is the hardware rule and the only host the results depend on. The loadgen is safe only because calibration proves its headroom before anything is scored, and the per-step CPU checks keep proving it during the run. The db is allowed to be the limit and is reported as such.

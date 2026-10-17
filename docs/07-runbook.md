@@ -6,7 +6,7 @@ The campaign runs as **8 AWS sessions** (decided 2026-10-17, [06](06-runner-and-
 
 ## 0. Prerequisites (local machine)
 
-- AWS account with a **spot** vCPU quota ("All Standard Spot Instance Requests", covers both the x86 and the Graviton hosts) of at least the three hosts together, plus room for one resize (≥ 64 vCPU; request an increase early)
+- AWS account with a **spot** vCPU quota ("All Standard Spot Instance Requests") of at least the three hosts together, plus room for one resize (≥ 64 vCPU; request an increase early)
 - Everything in steps 1–2 is local; AWS is only switched on from step 3
 - Terraform ≥ 1.9, AWS CLI v2, an SSH key pair, `rsync`, `python3` (3.11+, with `pyjwt[crypto]` for conformance) and `openssl`
 - Docker (to build and test stacks locally)
@@ -32,7 +32,7 @@ A local run only shows that things work. Local numbers are never published.
 Conformance runs **only here, locally**, at the commit that gets tagged. It is not rerun on AWS.
 
 - [ ] All 7 stacks pass conformance locally
-- [ ] Calibration is done manually, before the campaign session (DB ceilings for tests 2–5 with pgbench, k6's own ceiling with the echo script, loadgen size; see [04](04-methodology.md#when-postgres-is-the-bottleneck)). The results are written by hand to `results/calibration.json` and committed. The format is in [06](06-runner-and-results.md#calibrationjson). The test 3 ceiling must be measured with the 50-row page, since the db-sizing figure (7.1k) is for 100 rows. If the k6 ceiling demands it, the campaign uses `loadgen_type = c7g.8xlarge` from the start.
+- [ ] Calibration is done manually, before the campaign session (DB ceilings for tests 2–5 with pgbench, k6's own ceiling with the echo script, loadgen size; see [04](04-methodology.md#when-postgres-is-the-bottleneck)). The results are written by hand to `results/calibration.json` and committed. The format is in [06](06-runner-and-results.md#calibrationjson). The test 3 ceiling must be measured with the 50-row page, since the db-sizing figure (7.1k) is for 100 rows. If the k6 ceiling demands it, the campaign uses `loadgen_type = c7a.8xlarge` from the start.
 - [ ] Versions are pinned in every Dockerfile and lockfile
 - [ ] `config/bench.toml` is reviewed
 - [ ] `git tag methodology-v1 && git push --tags`
@@ -42,12 +42,11 @@ Conformance runs **only here, locally**, at the commit that gets tagged. It is n
 ```bash
 cd infra/terraform
 terraform init
-terraform apply -var region=eu-north-1 -var operator_ip=$(curl -s ifconfig.me)/32 \
-                -var ami_id=<pinned> -var ami_id_arm64=<pinned>   # ~5 min; add -var loadgen_type=c7g.8xlarge if calibration chose it
+terraform apply -var region=eu-north-1 -var ami_id=<pinned>   # ~5 min; add -var loadgen_type=c7a.8xlarge if calibration chose it
 terraform output                             # public_ips / private_ips maps by role, ssh_commands, hosts_toml
 ```
 
-- [ ] Session 1: write down `terraform output ami_id` and `ami_id_arm64` in the campaign notes. Every later session passes exactly these, plus the same region, AZ, instance types and the `methodology-v1` checkout. The runner refuses a session whose hosts don't match the hardware spec recorded by session 1.
+- [ ] Session 1: leave out `-var ami_id`, then write down `terraform output ami_id` in the campaign notes. Every later session passes exactly this, plus the same region, AZ, instance types and the `methodology-v1` checkout. The runner refuses a session whose hosts don't match the hardware spec recorded by session 1.
 
 ## 4. Deploy and seed (every session)
 
@@ -149,7 +148,7 @@ Check the AWS console afterwards: no running instances or EBS volumes should be 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `dropped_iterations > 0` at a rate the app clearly handles | k6 out of VUs or CPU | Raise `preAllocatedVUs`/`maxVUs`; resize the loadgen to `c7g.8xlarge` |
+| `dropped_iterations > 0` at a rate the app clearly handles | k6 out of VUs or CPU | Raise `preAllocatedVUs`/`maxVUs`; resize the loadgen to `c7a.8xlarge` |
 | `pps_allowance_exceeded` increases | Packet rate limit on app ENI (highest-rate tests: 2, 6) | Check whether the response size is unexpectedly large; this is a hard instance limit, so document it |
 | db CPU > 70% in tests 2–5, 9 | DB ceiling reached | Expected: the step is flagged `db_bound`, not invalid. In tests 6, 7, 8 it means the downstream mock or something else on the db host is busy: investigate |
 | Errors are `connection reset` at low rate | Accept backlog or `somaxconn` too small, or container ulimit | Check sysctls; `ulimits.nofile` in compose |

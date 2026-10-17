@@ -8,7 +8,7 @@ locals {
     loadgen = { type = var.loadgen_type, private_ip = "10.42.0.12" }
   }
 
-  # app and db are x86 (c7a/m7a); loadgen may be Graviton (c7g, arm64). Each host gets the
+  # All hosts are x86 (c7a) by default; a Graviton loadgen_type (c7g, arm64) still works. Each host gets the
   # Ubuntu image for its own architecture.
   host_arch = { for role, h in local.hosts : role => contains(data.aws_ec2_instance_type.by_type[h.type].supported_architectures, "arm64") ? "arm64" : "x86_64" }
   ami_ids = {
@@ -109,14 +109,14 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "bench" {
   name        = local.name
-  description = "lang-bench: SSH from operator, Grafana from allowed CIDRs, everything else intra-SG only"
+  description = "lang-bench: SSH from operator_ip (default anywhere), Grafana from allowed CIDRs, everything else intra-SG only"
   vpc_id      = aws_vpc.bench.id
   tags        = { Name = local.name }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh_operator" {
   security_group_id = aws_security_group.bench.id
-  description       = "SSH from the operator"
+  description       = "SSH (key-only) from operator_ip"
   cidr_ipv4         = var.operator_ip
   ip_protocol       = "tcp"
   from_port         = 22

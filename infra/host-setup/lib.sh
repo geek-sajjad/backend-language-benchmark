@@ -95,7 +95,7 @@ wait_for_host() {
   local role=$1 deadline=$((SECONDS + 900)) status
   log "$role ($(pub_ip "$role")): waiting for SSH"
   until rssh "$role" true 2>/dev/null; do
-    ((SECONDS < deadline)) || die "$role: SSH not reachable after 15 min (operator_ip correct? key loaded?)"
+    ((SECONDS < deadline)) || die "$role: SSH not reachable after 15 min (key loaded? operator_ip narrowed to an old IP?)"
     sleep 5
   done
   log "$role: waiting for cloud-init"
