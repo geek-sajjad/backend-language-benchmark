@@ -51,6 +51,7 @@ RSYNC_COMMON=(
   --exclude=/infra/host-setup/.state/
   --exclude=.terraform/ --exclude='*.tfstate' --exclude='*.tfstate.*' --exclude='*.tfvars'
   --include=/k6/data/jwt/public.pem
+  --include=.gitignore # Laravel's placeholders say "*, !.gitignore": rsync reads "!" as "clear the rules"
 )
 for role in $ROLES; do
   log "$role: rsync repo -> $REMOTE_REPO"
