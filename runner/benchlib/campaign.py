@@ -12,7 +12,7 @@ from .config import MIXED_TEST
 from .k6 import K6, k6_version
 from .prom import Prom
 from .search import InvalidStep, Pair, SetupError, run_pair
-from .spot import FINGERPRINT_KEYS, SpotInterruption, SpotWatch, fingerprint
+from .spot import SESSION_KEYS, SPEC_KEYS, SpotInterruption, SpotWatch, fingerprint
 from .util import REPO, atomic_write, atomic_write_json, log, read_json, set_log_file, utc_now
 
 
@@ -43,7 +43,28 @@ class Campaign:
         if (c.dir / "manifest.json").exists():
             raise SystemExit(f"campaign {cid} already exists; use `resume {cid}`")
         c.write_manifest(seed if seed is not None else random.SystemRandom().randrange(2**31), stacks, tests)
+        c.record_session("run", stacks)
         return c
+
+    def add_stacks(self, stacks, tests):
+        """A later session (06 "Sessions: one stack per day"): adds its stacks to the campaign
+        after checking that the hosts match the hardware spec recorded by the first session."""
+        m = self.manifest
+        if not m:
+            raise SystemExit(f"no campaign {self.id} in {self.dir.parent}")
+        if list(tests) != m["tests"]:
+            raise SystemExit(f"campaign {self.id} runs tests {m['tests']}; leave out --tests")
+        done = [s for s in stacks if s in m["stacks"]]
+        if done:
+            raise SystemExit(f"already in campaign {self.id}: {', '.join(done)}; use `resume {self.id}`")
+        unfinished = [s for s in m["stacks"] if self.unfinished(s)]
+        if unfinished:
+            raise SystemExit(f"finish {', '.join(unfinished)} first: python3 runner/bench.py resume {self.id}")
+        self.check_hardware()
+        m = self.manifest
+        m["stacks"] += list(stacks)
+        atomic_write_json(self.dir / "manifest.json", m)
+        self.record_session("run", stacks)
 
     @property
     def manifest(self):
@@ -70,11 +91,12 @@ class Campaign:
             "shuffle_seed": seed,
             "stacks": list(stacks),
             "tests": list(tests),
-            "hosts": fingerprint(c),  # compared by `resume` (06 "Spot interruptions")
+            # the hardware spec: every later session and every resume must match it (06 "Sessions")
+            "hosts": {h: {k: rec[k] for k in ("private_ip", *SPEC_KEYS)} for h, rec in fingerprint(c).items()},
             "k6": k6_version(),
             "postgres": safe(db.version),
-            "image_digests": safe(lambda: c.app.sh("cat results/image-digests.json", check=False).strip() or None),
             "calibration": read_json(REPO / "results" / "calibration.json"),
+            "sessions": [],
         }
         self.dir.mkdir(parents=True, exist_ok=True)
         shutil.copy(self.cfg.path, self.dir / "bench.toml")
@@ -90,12 +112,36 @@ class Campaign:
         random.Random(f"{self.manifest['shuffle_seed']}-{test}").shuffle(stacks)
         return stacks
 
-    def run(self):
+    def record_session(self, kind, stacks):
+        """Appends a session to the manifest when the hosts are new (other instance IDs or a
+        restart since the last session); otherwise adds the stacks to the current session."""
         m = self.manifest
-        log(f"campaign {self.id}: stacks {m['stacks']}, tests {m['tests']}")
+        sessions = m.setdefault("sessions", [])
+        now = fingerprint(self.cluster)
+        ids = {h: {k: rec.get(k) for k in SESSION_KEYS} for h, rec in now.items()}
+        last = sessions[-1] if sessions else None
+        if last and last["kind"] == kind and {h: {k: rec.get(k) for k in SESSION_KEYS}
+                                               for h, rec in last["hosts"].items()} == ids:
+            last["stacks"] += [s for s in stacks if s not in last["stacks"]]
+        else:
+            try:
+                digests = self.cluster.app.sh("cat results/image-digests.json", check=False, timeout=30).strip()
+            except (OSError, subprocess.SubprocessError) as e:
+                digests = f"unavailable: {e}"
+            sessions.append({"n": len(sessions) + 1, "kind": kind, "started": utc_now().isoformat(),
+                             "stacks": list(stacks), "hosts": now, "image_digests": digests or None})
+            log(f"session {len(sessions)} ({kind}): {', '.join(stacks)}")
+        atomic_write_json(self.dir / "manifest.json", m)
+
+    def run(self, stacks=None):
+        """The searches of every unfinished (stack, test) pair, one stack at a time
+        (06 "Flow of run"). The common-load phase is separate: `bench.py common-load`."""
+        m = self.manifest
+        stacks = stacks or m["stacks"]
+        log(f"campaign {self.id}: stacks {stacks}, tests {m['tests']}")
         with self.watching():
-            for test in m["tests"]:  # test-major order
-                for stack in self.order(test):
+            for stack in stacks:
+                for test in m["tests"]:
                     out = self.pair_dir(stack, test)
                     if (out / "result.json").exists():
                         continue
@@ -110,9 +156,22 @@ class Campaign:
                     except SpotInterruption:
                         self.pause(stack, test)
                     log(f"  → {r['status']}, max_rps {r.get('max_rps')}")
-            if MIXED_TEST in m["tests"]:
-                self.common_load()
         self.write_csv()
+        if MIXED_TEST in m["tests"]:
+            missing = self.missing_mixed()
+            log(f"still without a test {MIXED_TEST} result: {', '.join(missing)}" if missing else
+                f"every stack has a test {MIXED_TEST} result: python3 runner/bench.py common-load {self.id}")
+
+    def unfinished(self, stack):
+        return any(not (self.pair_dir(stack, t) / "result.json").exists() for t in self.manifest["tests"])
+
+    def missing_mixed(self, partial=False):
+        """Stacks without a test 9 result. L_common depends on every stack, so unless `partial`,
+        every configured stack counts, also those whose session hasn't run yet."""
+        stacks = list(self.manifest["stacks"])
+        if not partial:
+            stacks += [s for s in stack_selection(self.cfg, self.cluster, "all", quiet=True) if s not in stacks]
+        return [s for s in stacks if not (self.pair_dir(s, MIXED_TEST) / "result.json").exists()]
 
     def start_pair(self, stack, test, out):
         """Records the pair in progress and sets aside the steps of an earlier unfinished attempt
@@ -147,15 +206,15 @@ class Campaign:
         raise SystemExit(3)
 
     def check_hardware(self):
-        """Before `resume`: refuse unless every host matches the manifest's fingerprint. A host
-        that restarted (new boot_id) runs on another physical machine now; if that is the app host,
-        the finished pairs of the current test are rerun, so one test is never split across machines."""
+        """Before a later session, `resume` or `common-load`: refuse unless every host matches the
+        campaign's hardware spec. Instance IDs and boot_ids are not compared: each session runs on
+        new hosts, and finished pairs are kept when a host moves (06 "Spot interruptions")."""
         if self.cluster.local:
             return
         m = self.manifest
         now = fingerprint(self.cluster)
         diffs = [f"{host} {k}: {rec[k]!r} → {now.get(host, {}).get(k)!r}"
-                 for host, rec in m["hosts"].items() for k in FINGERPRINT_KEYS
+                 for host, rec in m["hosts"].items() for k in SPEC_KEYS
                  if k in rec and now.get(host, {}).get(k) != rec[k]]
         for key, current in (("k6", k6_version()), ("postgres", Database(self.cluster).version)):
             try:
@@ -167,41 +226,22 @@ class Campaign:
         if diffs:
             for d in diffs:
                 log(f"hardware differs: {d}")
-            log("not resuming: the campaign stays paused until identical hardware is available")
+            log("not continuing: the campaign stays paused until matching hardware is available")
             raise SystemExit(3)
 
         paused = read_json(self.dir / "paused.json")
-        restarted = [h for h, rec in m["hosts"].items() if rec.get("boot_id") and now[h]["boot_id"] != rec["boot_id"]]
-        if not paused and not restarted:
-            return
-        current = read_json(self.dir / "current.json", {})
-        test = (paused or current).get("test")
-        rerun = self.supersede(test) if "app" in restarted and test is not None else []
-        entry = {"paused": paused, "resumed": utc_now().isoformat(), "restarted_hosts": restarted,
-                 "rerun_test": test if rerun else None, "rerun_stacks": rerun}
-        m.setdefault("pauses", []).append(entry)
-        for h in restarted:
-            m["hosts"][h]["boot_id"] = now[h]["boot_id"]
-        atomic_write_json(self.dir / "manifest.json", m)
-        (self.dir / "paused.json").unlink(missing_ok=True)
-        log(f"resuming after pause: restarted hosts {restarted or 'none'}"
-            + (f"; test {test} rerun for {', '.join(rerun)}" if rerun else ""))
-
-    def supersede(self, test):
-        """Sets aside the finished results of one test (or the common-load phase) for every stack."""
-        stamp = utc_now().strftime("%Y%m%dT%H%M%SZ")
-        rerun = []
-        for stack in self.manifest["stacks"]:
-            d = self.dir / stack / "common-load" if test == "common" else self.pair_dir(stack, test)
-            if (d / "result.json").exists():
-                (d / "result.json").rename(d / f"result.superseded-{stamp}.json")
-                rerun.append(stack)
-        return rerun
+        if paused:
+            m.setdefault("pauses", []).append({"paused": paused, "resumed": utc_now().isoformat()})
+            atomic_write_json(self.dir / "manifest.json", m)
+            (self.dir / "paused.json").unlink(missing_ok=True)
+            log(f"resuming after pause ({paused['host']}: {paused['reason']}); "
+                f"only {paused['stack']} test {paused['test']} is rerun")
 
     # ------------------------------------------------------------------ common load
 
     def common_load(self):
-        """Test 9 at L_common = 0.8 × the lowest passing max_rps (04 "Test 9 extras")."""
+        """Test 9 at L_common = 0.8 × the lowest passing max_rps (04 "Test 9 extras"), every stack
+        in one session (session 8)."""
         rates = {}
         for stack in self.manifest["stacks"]:
             r = read_json(self.pair_dir(stack, MIXED_TEST) / "result.json")
@@ -295,22 +335,19 @@ class Campaign:
 
 
 def estimate(cfg, n_stacks, tests):
-    """Rough campaign duration in seconds (06 "Estimated duration")."""
+    """Rough duration of the searches in seconds, without the common-load phase (06 "Estimated duration")."""
     s = cfg["search"]
     per_pair = 40 + s["smoke"]["duration_s"] + s["warmup"]["duration_s"] + 90 + 6 * (s["settle_s"] + s["measure_s"] + 15)
-    total = sum(per_pair + (30 if cfg.is_write_test(t) else 0) for t in tests) * n_stacks
-    if MIXED_TEST in tests:
-        total += n_stacks * (60 + s["warmup"]["duration_s"] + cfg["common_load"]["duration_s"])
-    return total
+    return sum(per_pair + (30 if cfg.is_write_test(t) else 0) for t in tests) * n_stacks
 
 
-def stack_selection(cfg, cluster, arg):
+def stack_selection(cfg, cluster, arg, quiet=False):
     names = list(cfg.stacks) if arg in (None, "all") else [s.strip() for s in arg.split(",")]
     unknown = [n for n in names if n not in cfg.stacks]
     if unknown:
         raise SystemExit(f"unknown stacks: {unknown} (configured: {list(cfg.stacks)})")
     ready = [n for n in names if Stack(cluster, n).exists()]
     skipped = sorted(set(names) - set(ready))
-    if skipped:
+    if skipped and not quiet:
         log(f"skipping stacks without stacks/<name>/compose.yml: {', '.join(skipped)}")
     return ready

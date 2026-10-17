@@ -8,6 +8,14 @@ set -euo pipefail
 ROLE="${1:?role (app|db|loadgen)}"
 K6_VERSION="${2:-2.2.0}"
 K6_SHA256="${3:-}"
+# Docker packages, pinned: the campaign runs one session per stack on freshly provisioned hosts,
+# and `bench.py` refuses a session whose Docker version differs from the first one (docs/06
+# "Sessions: one stack per day"). Same versions for amd64 and arm64. To bump, pick the versions
+# from `apt-cache madison docker-ce`, and only between campaigns.
+DOCKER_VERSION="5:29.9.1-1~ubuntu.24.04~noble"
+CONTAINERD_VERSION="2.4.2-2~ubuntu.24.04~noble"
+BUILDX_VERSION="0.38.0-1~ubuntu.24.04~noble"
+COMPOSE_VERSION="5.6.0-1~ubuntu.24.04~noble"
 
 case "$ROLE" in app | db | loadgen) ;; *) echo "unknown role: $ROLE" >&2; exit 1 ;; esac
 
@@ -38,7 +46,10 @@ if ! command -v docker >/dev/null || ! docker compose version >/dev/null 2>&1; t
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $codename stable" \
     >/etc/apt/sources.list.d/docker.list
   "${APT[@]}" update
-  "${APT[@]}" install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  "${APT[@]}" install "docker-ce=$DOCKER_VERSION" "docker-ce-cli=$DOCKER_VERSION" \
+    "containerd.io=$CONTAINERD_VERSION" "docker-buildx-plugin=$BUILDX_VERSION" \
+    "docker-compose-plugin=$COMPOSE_VERSION"
+  apt-mark hold docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
 usermod -aG docker ubuntu
 

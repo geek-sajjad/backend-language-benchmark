@@ -17,7 +17,7 @@ Turns the three hosts from [`../terraform`](../terraform) into the lab of [docs/
 | What | Detail |
 |---|---|
 | Packages | `ethtool rsync git jq tmux sysstat python3 python3-jwt python3-cryptography postgresql-client` (Ubuntu 24.04: Python 3.12, psql 16) |
-| Docker | Docker CE + buildx + compose plugin from Docker's apt repo; `ubuntu` in the `docker` group; `daemon.json` with default `nofile` 1048576 and capped json-file logs |
+| Docker | Docker CE 29.9.1 + containerd 2.4.2 + buildx + compose plugin from Docker's apt repo, pinned and held (`DOCKER_VERSION` etc. at the top of `bootstrap.sh`), so every session of a campaign gets the same Docker; `ubuntu` in the `docker` group; `daemon.json` with default `nofile` 1048576 and capped json-file logs |
 | sysctl (`/etc/sysctl.d/90-bench.conf`) | `net.core.somaxconn=65535`, `net.ipv4.ip_local_port_range=1024 65535`, `net.ipv4.tcp_tw_reuse=1`, `fs.file-max=4194304`, `fs.nr_open=1048576`, and `net.ipv4.ip_local_reserved_ports=3000,5432,8080,8081,9000,9090,9100,9187` |
 | nofile 1048576 | `limits.d` for `ubuntu`/`root`, systemd `DefaultLimitNOFILE`, `LimitNOFILE` for docker and containerd |
 | Swap | `swapoff -a`, swap lines in `/etc/fstab` commented out |

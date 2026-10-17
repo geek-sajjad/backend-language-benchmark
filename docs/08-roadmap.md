@@ -11,7 +11,7 @@
 | **M4** | Runner | `runner/bench.py` (check, conformance, calibrate, run, resume, csv), Prometheus window queries, ethtool/docker checks, atomic result files, dry-run | Full dry run plus a real run against local compose |
 | **M5** | Infra + monitoring | Terraform (VPC, one public subnet, security group, 3 hosts), host-setup scripts, Prometheus config, 3 Grafana dashboards | `terraform apply` → `bench.py check` green |
 | **M6** | Manual calibration | `calibration.json` (written by hand from manual pgbench and k6 echo runs), sizing decisions. No pilot (decided 2026-10-11) | Headroom proven; methodology tagged `methodology-v1` |
-| **M7** | Scored campaign | `results/<campaign-id>/` complete, `scores.txt` | Publishing checklist done |
+| **M7** | Scored campaign | 8 AWS sessions: one per stack, then common load ([06](06-runner-and-results.md#sessions-one-stack-per-day)); `results/<campaign-id>/` complete, `scores.txt` | Publishing checklist done |
 | **M8** | Video assets | Charts (per test, categories, overall, memory, cost per req), Grafana clips, B-roll of the dashboards | Charts generated from `results.csv` with a script (`scoring/charts.py`; per-test charts with the DB ceiling exist, the category, overall, memory and cost charts don't yet) |
 
 M1 → M2 → M3 is the critical path. M4 and M5 can be built in parallel with M2.
@@ -30,6 +30,7 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 | D6 | Java concurrency | **MVC + virtual threads** (Spring's recommended path for new apps) | WebFlux + R2DBC |
 | D7 | Downstream delay (test 6) | **50 ms fixed** (leaves 50 ms of the p95 budget) | 20 ms, or jitter (less deterministic) |
 | D8 | Reported-only metrics ([04 Appendix A](04-methodology.md#appendix-a-reported-only-metrics-considered-not-run)) | **Decided 2026-10-11: none are run.** Startup time + idle memory, overload recovery, soak test and core scaling efficiency are all dropped. None affected the scores. | Adopt any of them later as a separate, reported-only phase |
+| D9 | Campaign split | **Decided 2026-10-17: one AWS session per stack** (provision → all tests of one stack → save → destroy; next stack another day), then one session for the test 9 common load. Stacks no longer share one physical machine; that noise is accepted and stated ([06](06-runner-and-results.md#sessions-one-stack-per-day)) | One ~17 h unattended session, test-major, all stacks on the same hosts |
 
 ## Risks
 
@@ -39,9 +40,9 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 | Postgres saturates before the fastest stacks (expected on the 4-core db in tests 3–5) | DB-bound scores converge | **Accepted by design**: steps flagged `db_bound` instead of invalid, results marked "DB-limited", DB ceiling drawn on the charts and stated in the video ([04](04-methodology.md#when-postgres-is-the-bottleneck)). The runner flags such steps (`db_bound_tests` in `config/bench.toml`), `results.csv` carries a `db_bound` column and `score.py` lists DB-limited results. `scoring/charts.py` draws the ceiling line on tests 2–5 and hatches DB-limited bars |
 | Network allowances on `c7a.xlarge` (burst, **~1.56 Gbps baseline**, half of the 8-core host the payloads were first sized for) | A network limit makes the step INVALID with no setup fix | Test 7 payload cut from 45 items (~12 KB) to 15 items (~4 KB, ~1.3 Gbps at 40k req/s); ethtool validity check; check test 2/6 packet rate (pps allowance) in calibration |
 | Accusations of unfair config ("you didn't use X!") | Credibility | Selection rule + allowed-config table + "potential optimizations" lists published; each stack's README reviewed by someone fluent in it, if possible |
-| Single run noise | Wrong order between close stacks | 5% tie rule; randomized order; test-major order |
-| Long campaign (~10 h) interrupted | Wasted time and money | `resume`, atomic writes, tmux |
-| Spot interruption (all hosts are spot) | Pause; hardware could change | Runner pauses and saves, continues only on identical hardware (type, CPU model, AMI, kernel); app host moved → current test rerun for all stacks ([06](06-runner-and-results.md#spot-interruptions)). Implemented in `runner/benchlib/spot.py`: notice polling every 10 s, `paused.json` + exit 3, fingerprint and boot-id check in `resume`. Tested locally with fake hosts only; not yet exercised on a real interruption |
+| Single run noise, and each stack on different physical machines (one session per stack) | Wrong order between close stacks | 5% tie rule; same instance type, CPU model and AMI checked every session; latency and memory scores from one shared session; the limitation is stated in the video |
+| A session interrupted | Wasted time and money | Sessions are ~2 h, one stack each; `resume`, atomic writes, tmux; a long pause can end the session and finish the stack another day |
+| Spot interruption (all hosts are spot) | Pause; hardware could change | Runner pauses and saves, continues only on matching hardware (type, CPU model, AMI, kernel); only the interrupted pair is rerun ([06](06-runner-and-results.md#spot-interruptions)). Implemented in `runner/benchlib/spot.py` and `campaign.py`: notice polling every 10 s, `paused.json` + exit 3, hardware-spec check in `resume` and at the start of every session. Tested locally with fake hosts only; not yet exercised on a real interruption |
 | No pilot: `settle_s = 15` and the 5% tie threshold ([09 R8](09-review-findings.md#r8-the-tie-threshold-is-not-grounded-in-measured-noise)) aren't checked on AWS before the campaign | A settle or noise problem only shows up in the scored results | `settle_unstable` is reported per step; the tie threshold is stated as an assumption in the video (the db-sizing pgbench repeats spread 1.9%) |
 | Monitoring (Prometheus + Grafana, public viewers) shares the loadgen host | Viewer bursts steal CPU from k6 | Grafana stopped during scored runs; Prometheus pinned to 2 cores, k6 to the other 14; loadgen CPU < 70% check; k6 calibrated with monitoring as in the campaign |
 | Spot/AZ capacity for `c7a` / `c7g` | Can't provision, or long pauses | Pre-check spot placement scores and price history; pick the AZ with capacity for all three types |
@@ -58,12 +59,12 @@ These are recommendations. Please confirm or change them **before M2** (the PHP 
 
 | Phase | Hours |
 |---|---|
-| Provision, deploy, seed (no conformance on AWS, no image builds up front) | ~0.5 |
-| Scored campaign, one unattended session, including one image build per stack before its benchmarks (~0.5 h) | ~10.5 |
-| Reruns / buffer, only if needed (`resume` reruns only the affected pairs; spot interruptions add reruns, see [06](06-runner-and-results.md#spot-interruptions)) | 0–6 |
-| **Total** | **~11 h ≈ $2.60 with no reruns, ~17 h ≈ $4.00 with the full buffer** |
+| Sessions 1–7, one stack each: provision, deploy, seed ~0.5 h + image build + 8 tests ~1.3 h + collect and destroy ~0.2 h ([06](06-runner-and-results.md#estimated-duration)) | 7 × ~2 = ~14 |
+| Session 8: test 9 common load for all stacks | ~1.5 |
+| Reruns / buffer, only if needed (`resume` reruns only the interrupted pair) | 0–3 |
+| **Total** | **~15.5 h ≈ $3.70 with no reruns, ~18.5 h ≈ $4.40 with the buffer, over 8 days** |
 
-Not in this session (decided 2026-10-11): conformance runs once locally; calibration is done manually beforehand; there is no pilot.
+Not in any session (decided 2026-10-11): conformance runs once locally; calibration is done manually beforehand; there is no pilot.
 
 No NAT gateway, load balancer, provisioned IOPS or extra volumes. Development happens locally, and AWS is torn down between sessions. Hours while the campaign is paused for a spot interruption cost nothing for the stopped host, but the running hosts and the EBS volumes keep billing: stop the other two hosts too if a pause will be long.
 
@@ -81,6 +82,7 @@ No NAT gateway, load balancer, provisioned IOPS or extra volumes. Development ha
 | Campaign ~15 h → ~10 h (shorter steps and smoke, 5% bisection, faster probe, fewer DB recreates; see [06](06-runner-and-results.md#estimated-duration)) | −5 h |
 | Calibration + pilot 6 h → 4 h, buffer 14 h → 6 h | −10 h |
 | No conformance or up-front image builds on AWS, calibration done manually beforehand, no pilot (2026-10-11) | −3 h (~20 h → ~17 h with the full buffer) |
+| One session per stack plus a common-load session instead of one long session (2026-10-17) | +3.5 h of provisioning, −3 h of buffer (an interruption reruns one pair, not a whole test) |
 
 The app host (`c7a.xlarge`, 4 cores / 8 GB) is the hardware rule and the only host the results depend on. The loadgen is safe only because calibration proves its headroom before anything is scored, and the per-step CPU checks keep proving it during the run. The db is allowed to be the limit and is reported as such.
 

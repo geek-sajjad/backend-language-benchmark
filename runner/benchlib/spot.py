@@ -3,7 +3,7 @@
 SpotWatch polls the interruption notice on every host in a background thread. When AWS announces
 a stop (about 2 min ahead), or a host stops answering SSH, it trips: the running k6 process is
 killed and the pair raises SpotInterruption, so nothing from that pair is scored. The campaign then
-writes paused.json and exits; `resume` checks the hardware fingerprint before continuing.
+writes paused.json and exits; `resume` checks the hardware spec before continuing.
 """
 import subprocess
 import threading
@@ -14,8 +14,11 @@ from .util import log, utc_now
 POLL_S = 10
 SSH_LOST_POLLS = 3  # consecutive failed polls (~30 s) before a silent host counts as interrupted
 
-# Compared on resume: any difference keeps the campaign paused.
-FINGERPRINT_KEYS = ("instance_type", "instance_id", "cpu_model", "cores", "ami", "kernel", "docker")
+# The campaign's hardware spec, compared at the start of every later session and on every resume:
+# any difference keeps the campaign paused (06 "Sessions: one stack per day").
+SPEC_KEYS = ("instance_type", "cpu_model", "cores", "ami", "kernel", "docker")
+# Identify the hosts of one session; expected to change between sessions, never compared.
+SESSION_KEYS = ("instance_id", "boot_id")
 
 
 class SpotInterruption(RuntimeError):

@@ -4,10 +4,12 @@
   bench.py check                                   hosts, versions, sysctls, data files
   bench.py conformance [--stacks …]                conformance/check.py against each stack
   bench.py calibrate                               DB, k6 and downstream ceilings → results/calibration.json
-  bench.py run [--stacks …] [--tests …] [--dry-run] full campaign → results/<campaign-id>/
-  bench.py resume <campaign-id>                    continue; completed pairs are skipped (after a
-                                                   spot pause: only on identical hardware)
-  bench.py common-load <campaign-id>               rerun only the test 9 common-load phase
+  bench.py run --stacks <stack> [--campaign <id>]  one session: every test of the stack → results/<id>/;
+                                                   an existing --campaign gets the stack added (later
+                                                   sessions; hardware must match the first session)
+  bench.py resume <campaign-id>                    continue; completed pairs are skipped (only on
+                                                   hardware matching the campaign's spec)
+  bench.py common-load <campaign-id>               test 9 common load for every stack (last session)
   bench.py csv <campaign-id>                       rebuild results.csv and scores.txt
 
 Hosts come from runner/hosts.toml (written by infra/host-setup/deploy.sh). Without it the
@@ -31,7 +33,7 @@ from benchlib.campaign import Campaign, Context, estimate, stack_selection  # no
 from benchlib.cluster import Cluster, Database, Stack  # noqa: E402
 from benchlib.config import ALL_TESTS, Config  # noqa: E402
 from benchlib.k6 import k6_version  # noqa: E402
-from benchlib.util import REPO, log  # noqa: E402
+from benchlib.util import REPO, log, read_json  # noqa: E402
 
 SYSCTLS = {"net.core.somaxconn": "65535", "net.ipv4.tcp_tw_reuse": "1",
            "net.ipv4.ip_local_port_range": "1024\t65535"}
@@ -118,26 +120,51 @@ def cmd_run(ctx, args):
               f"({ctx.cfg['search']['settle_s']} + {ctx.cfg['search']['measure_s']} s) + recovery")
         print(f"estimated duration: {secs / 3600:.1f} h")
         return 0
-    campaign = Campaign.create(ctx, args.campaign, args.seed, stacks, tests)
+    if args.campaign and (REPO / "results" / args.campaign / "manifest.json").exists():
+        campaign = Campaign(ctx, args.campaign)
+        campaign.add_stacks(stacks, tests)  # a later session; refuses (exit 3) on different hardware
+    else:
+        campaign = Campaign.create(ctx, args.campaign, args.seed, stacks, tests)
     log(f"estimated duration: {secs / 3600:.1f} h")
-    campaign.run()
+    campaign.run(stacks)
     return 0
 
 
 def cmd_resume(ctx, args):
     c = Campaign(ctx, args.campaign_id)
-    c.check_hardware()  # refuses (exit 3) unless every host matches the manifest
-    c.run()
+    if not c.manifest:
+        raise SystemExit(f"no campaign {args.campaign_id}")
+    c.check_hardware()  # refuses (exit 3) unless every host matches the campaign's spec
+    m = c.manifest
+    phase = read_json(c.dir / "current.json", {}).get("test")
+    pending = [s for s in m["stacks"] if c.unfinished(s)]
+    if pending:
+        c.record_session("run", pending)
+        c.run(pending)
+    if phase == "common":
+        c.record_session("common-load", m["stacks"])
+        with c.watching():
+            c.common_load()
+        c.write_csv()
+    elif not pending:
+        log("nothing to resume: every pair has a result")
     return 0
 
 
 def cmd_common_load(ctx, args):
     c = Campaign(ctx, args.campaign_id)
+    if not c.manifest:
+        raise SystemExit(f"no campaign {args.campaign_id}")
+    missing = c.missing_mixed(partial=args.partial)
+    if missing:
+        raise SystemExit(f"common load needs a test 9 result for every stack; missing: {', '.join(missing)}"
+                         " (--partial: only the stacks already in the campaign)")
+    c.check_hardware()
     for stack in c.manifest["stacks"]:
         done = c.dir / stack / "common-load" / "result.json"
         if done.exists():
             done.rename(done.with_suffix(".previous.json"))
-    c.check_hardware()
+    c.record_session("common-load", c.manifest["stacks"])
     with c.watching():
         c.common_load()
     c.write_csv()
@@ -159,13 +186,15 @@ def main():
     p.add_argument("--stacks", default="all")
     sub.add_parser("calibrate")
     p = sub.add_parser("run")
-    p.add_argument("--stacks", default="all", help="comma-separated, or all")
+    p.add_argument("--stacks", default="all", help="comma-separated, or all (a scored session runs one stack)")
     p.add_argument("--tests", default="all", help="comma-separated test numbers, or all")
-    p.add_argument("--campaign", help="campaign id (default: <utc time>-<git sha>)")
+    p.add_argument("--campaign", help="campaign id (default: <utc time>-<git sha>); an existing one gets the stacks added")
     p.add_argument("--seed", type=int, help="shuffle seed (default: random, saved in the manifest)")
     p.add_argument("--dry-run", action="store_true", help="print the plan and estimated duration only")
     for name in ("resume", "common-load", "csv"):
         sub.add_parser(name).add_argument("campaign_id")
+    sub.choices["common-load"].add_argument(
+        "--partial", action="store_true", help="development only: L_common from the stacks already in the campaign")
     args = ap.parse_args()
 
     ctx = Context(Config(pathlib.Path(args.config) if args.config else None), Cluster(args.hosts))

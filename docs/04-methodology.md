@@ -127,9 +127,9 @@ A crash or OOM at a higher step still records the last passing rate as `max_rps`
 
 ## Test 9 extras: common-load latency and memory
 
-1. Run the test 9 search for **all** stacks first.
+1. Run the test 9 search for **all** stacks first (sessions 1–7, one stack each, see [06](06-runner-and-results.md#sessions-one-stack-per-day)).
 2. `L_common = 0.8 × min(max_rps of stacks that passed test 9)`. Test 9 offers load as sessions/s, so the runner divides by 4.65 requests per session ([02](02-test-spec.md#9--mixed-workload-user-sessions-authenticated)).
-3. For each stack: restart, reset the DB, smoke, warm up, then run **120 s at `L_common`**. Record:
+3. In one final session (session 8), for each stack in a shuffled order (seed in the manifest): restart, reset the DB, smoke, warm up, then run **120 s at `L_common`**. All 7 stacks share that session's hosts, so the latency and memory scores compare them on the same machines. Record:
    - `p99_common_ms`: k6 p99 over the 120 s
    - `peak_rss_mb`: the peak of **`anon + shmem`** from the app container's cgroup `memory.stat`, sampled every 1 s on the app host ([09 R2](09-review-findings.md#r2-the-memory-metric-probably-misses-shared-memory)). cgroup accounting counts each page once, so this covers 4 Node workers, 4 Uvicorn workers or all FPM children plus Nginx without double counting shared pages, and it includes shared memory such as PHP's OPcache segment. cAdvisor's `container_memory_rss` is the cgroup's `anon` only (verified: no shmem series on cgroup v2); it is recorded next to it as a cross-check. A stack must run as one container (`app`).
 
@@ -138,9 +138,9 @@ A crash or OOM at a higher step still records the last passing rate as `max_rps`
 ## Fairness rules
 
 - Exactly one stack runs on the app host at a time. Nothing else runs there apart from `node_exporter` and `cAdvisor`, which are identical for every stack.
-- Same AMI, kernel, sysctls, Docker version and instance type for every stack. Every stack runs inside one Terraform-provisioned environment in one campaign, so no stack gets a different physical host from a re-provision mid-campaign. If a re-provision is forced, **all** stacks are rerun.
-- All hosts are spot instances. A spot interruption pauses the campaign; it continues only on the same instance type and CPU model, and if the app host moved, the whole current test is rerun for every stack, so within one test all stacks share one physical machine ([06](06-runner-and-results.md#spot-interruptions)).
-- Stack run order is randomized per test (the seed is recorded in the manifest) so time-of-day or neighbor effects don't consistently favor one stack.
+- Same region and AZ, AMI, kernel, sysctls, Docker version, instance type and CPU model for every stack, checked against the campaign's hardware spec at the start of every session ([06](06-runner-and-results.md#sessions-one-stack-per-day)).
+- **Each stack runs in its own session on freshly provisioned hosts** (one stack per day, decided 2026-10-17), so stacks do **not** share one physical machine. Differences between physical machines of the same type (noisy neighbors on spot hosts, memory and cache placement) are accepted and stated in the video. The exception is the test 9 common-load phase, which runs all stacks in one session.
+- All hosts are spot instances. A spot interruption pauses the session; it continues only on the same instance type and CPU model, and only the interrupted (stack, test) pair is rerun ([06](06-runner-and-results.md#spot-interruptions)).
 - Identical smoke, warm-up, probe, step duration, recovery rules and payload sets.
 - The conformance suite passes for every stack at the exact commit that gets benchmarked.
 
@@ -171,9 +171,10 @@ The ceiling is for the test's own SQL, so a stack can be DB-limited below the li
 ## Known limitations (stated in the video)
 
 - **One run per test.** Differences under 5% are reported as ties.
+- **Each stack ran on different physical machines** (one AWS session per stack, on different days). Same instance type and CPU model, but noisy neighbors and placement can shift results by a few percent between stacks; the 5% tie rule covers part of that. Only the common-load latency and memory scores come from one shared session.
 - One hardware shape: results may change on ARM (Graviton) or with more or fewer cores.
 - One stack per language. A different framework would give that language a different score.
-- Cloud noise: dedicated physical cores reduce it but don't eliminate it.
+- Cloud noise: dedicated physical cores reduce it but don't eliminate it, and with one session per stack it isn't shared equally between stacks.
 
 ---
 
@@ -187,7 +188,7 @@ The ceiling is for the test's own SQL, so a stack can be DB-limited below the li
 |---|---|
 | What | Time from `docker compose up` (container start) to the first `GET /health` = 200, and RSS after 30 s idle with no traffic |
 | Why | Matters for autoscaling, rolling deploys, containers and serverless. JVM/.NET vs Go/Rust differ a lot. |
-| How | The runner already restarts the stack before every test, so it can record both on every restart and report the **median of the 9 restarts** per stack. Idle RSS comes from cAdvisor, same as `peak_rss_mb`. |
+| How | The runner already restarts the stack before every test, so it can record both on every restart and report the **median of the 8 restarts** per stack. Idle RSS comes from cAdvisor, same as `peak_rss_mb`. |
 | Cost | Close to zero (about 30 s idle wait per restart → ~30 min per campaign) |
 | Open questions | Do the startup-built sales dataset (test 8) and JIT warm-up count? (Proposed: yes, time to ready is what a deploy waits for.) Report image size too? |
 

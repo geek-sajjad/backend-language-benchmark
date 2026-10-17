@@ -6,14 +6,17 @@
 python3 runner/bench.py check                         # hosts, versions, sysctls, data files, Prometheus targets
 python3 runner/bench.py conformance --stacks all      # conformance/check.py against each stack (local only, not run on AWS)
 python3 runner/bench.py calibrate                     # → results/calibration.json (optional: calibration is done manually, docs/07)
-python3 runner/bench.py run --stacks all --dry-run    # plan + estimated duration
-python3 runner/bench.py run --stacks all              # → results/<campaign-id>/
+python3 runner/bench.py run --stacks rust-axum --dry-run                  # plan + estimated duration
+python3 runner/bench.py run --stacks rust-axum                            # session 1 → results/<campaign-id>/
+python3 runner/bench.py run --stacks go-gin --campaign <campaign-id>      # sessions 2–7: add a stack
 python3 runner/bench.py resume <campaign-id>          # after an INVALID stop, a spot pause or a crash
-python3 runner/bench.py common-load <campaign-id>     # rerun only the test 9 common-load phase
+python3 runner/bench.py common-load <campaign-id>     # session 8: test 9 common load for every stack
 python3 runner/bench.py csv <campaign-id>             # rebuild results.csv + scores.txt
 ```
 
-Exit status: 0 done, 2 INVALID step (fix the cause, then `resume`), 3 paused by a spot interruption, or `resume` refused because a host's hardware fingerprint differs from the manifest (wait for identical hardware). Details in [docs/06](../docs/06-runner-and-results.md#spot-interruptions).
+Exit status: 0 done, 2 INVALID step (fix the cause, then `resume`), 3 paused by a spot interruption, or a later session / `resume` refused because a host differs from the campaign's hardware spec (instance type, CPU model, cores, AMI, kernel, Docker, k6, Postgres; instance IDs may differ). Details in [docs/06](../docs/06-runner-and-results.md#spot-interruptions).
+
+A scored campaign runs **one stack per AWS session** ([docs/06](../docs/06-runner-and-results.md#sessions-one-stack-per-day)). `run` runs every test of its stacks, one stack at a time, and never the common load; `common-load` needs a test 9 result for every configured stack (`--partial` for development). Each session (new instance IDs or boot_ids) is recorded in `manifest.json` under `sessions`.
 
 `--config` picks another `bench.toml` (only for development; a scored campaign uses the frozen one) and `--hosts` another hosts file. "all" means every configured stack that has a `stacks/<name>/compose.yml`; the others are skipped with a note.
 
@@ -65,9 +68,9 @@ Each (stack, test) pair: reset (restart the container; tests 5 and 9 also recrea
 | `benchlib/k6.py` | Runs k6, parses the summary (`http_reqs{phase:measure}.count ÷ measure_s`, never the submetric's `rate`) |
 | `benchlib/prom.py` | Prometheus window queries (expressions in `monitoring/README.md`) |
 | `benchlib/search.py` | The per-pair search, verdicts, recovery |
-| `benchlib/campaign.py` | Manifest, test-major randomized order, resume, common load, `results.csv` |
-| `benchlib/spot.py` | Spot interruption watcher (notice polling, lost SSH), host fingerprint for `resume` |
+| `benchlib/campaign.py` | Manifest and sessions, stack-by-stack order, hardware-spec check, resume, common load, `results.csv` |
+| `benchlib/spot.py` | Spot interruption watcher (notice polling, lost SSH), host fingerprint (`SPEC_KEYS` compared, `SESSION_KEYS` only recorded) |
 | `benchlib/calibrate.py` | pgbench ceilings for tests 2–5, k6 ceiling (echo server), downstream-mock ceiling |
 | `pgbench/test{2..5}.sql` | The SQL each test produces, for the DB ceiling |
 
-All result files are written atomically (temp file + rename). The runner never deletes a campaign folder; a rerun pair adds a new attempt (`search.a2.json`, `steps/a2-…`). Steps of an unfinished attempt (INVALID, interrupted, crashed) are moved to `discarded/<time>/` before the rerun, and results set aside after the app host moved are renamed `result.superseded-<time>.json`.
+All result files are written atomically (temp file + rename). The runner never deletes a campaign folder; a rerun pair adds a new attempt (`search.a2.json`, `steps/a2-…`). Steps of an unfinished attempt (INVALID, interrupted, crashed) are moved to `discarded/<time>/` before the rerun. Finished results are never set aside: a spot interruption reruns only the interrupted pair.

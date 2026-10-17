@@ -38,6 +38,6 @@ Every published score names its stack, for example "Node: 38.7 (NestJS)".
 
 - Seven stack implementations that pass the conformance suite
 - Infrastructure as code that recreates the exact environment
-- One fully automated campaign run: `results/<campaign-id>/`
+- One automated campaign: `results/<campaign-id>/`, run as one AWS session per stack plus a final common-load session
 - Final scores and charts for the video
 - This documentation set, published with the video

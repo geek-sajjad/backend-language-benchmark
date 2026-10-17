@@ -9,17 +9,31 @@
 | `bench.py check` | Pings every host, verifies versions (Docker, k6, Postgres), sysctls and that `bench_template` exists |
 | `bench.py conformance [--stacks …]` | Starts each stack and runs `conformance/check.py` against it. Fails fast. Local development only: conformance passes once locally at the frozen commit and is not rerun on AWS. |
 | `bench.py calibrate` | Measures the DB ceiling (pgbench, tests 2–5), the k6 ceiling (echo server) and the downstream mock ceiling. Writes `results/calibration.json`; `run` copies it into the manifest. Optional helper: calibration is done manually before the campaign session, and its results are written to `results/calibration.json` by hand ([07](07-runbook.md#2-freeze-the-methodology)). |
-| `bench.py run [--stacks …] [--tests …]` | The full search for each stack × test, then the test 9 common-load phase |
-| `bench.py common-load` | Reruns only the common-load phase (computes `L_common` from existing test 9 results) |
-| `bench.py resume <campaign-id>` | Continues an interrupted or paused campaign and skips completed (stack, test) pairs. After a spot interruption it first checks that the hardware is identical ([Spot interruptions](#spot-interruptions)) |
+| `bench.py run --stacks <stack> [--campaign <id>] [--tests …]` | The full search for every test of one stack: one AWS session ([Sessions](#sessions-one-stack-per-day)). The first session creates the campaign; later sessions pass `--campaign <id>` and add their stack to it. It refuses a stack that is already in the campaign, and refuses to start while an earlier stack still has unfinished tests (finish that one with `resume` first) |
+| `bench.py common-load <campaign-id> [--partial]` | The test 9 common-load phase for every stack, in the final session. Refuses until every configured stack has a test 9 result, since `L_common` depends on all of them (`--partial`, development only: use the stacks already in the campaign). Computes `L_common` from those results |
+| `bench.py resume <campaign-id>` | Continues the current session's stack after an INVALID stop, a crash or a spot pause, and skips completed (stack, test) pairs. It first checks that the hosts match the campaign's hardware spec ([Spot interruptions](#spot-interruptions)) |
 | `bench.py csv <campaign-id>` | Rebuilds `results.csv` from the raw step files |
 
-## Flow of `run`
+## Sessions: one stack per day
+
+The whole campaign is ~17 h of host time, too long to run in one sitting. It is split into **one AWS session per stack** (decided 2026-10-17): provision, run every test of that stack, copy the results to this repo, `terraform destroy`. The next stack runs in a new session, usually the next day. After the seventh stack, one more short session runs the test 9 common-load phase for all stacks. That makes **8 sessions** in total, each about 2 hours ([estimate](#estimated-duration)).
+
+| Session | What runs | Command |
+|---|---|---|
+| 1–7 | One stack, tests 2–9 (search + confirm per test) | `bench.py run --stacks <stack> --campaign <id>` |
+| 8 | Test 9 common load for all 7 stacks: `L_common`, `p99_common_ms`, `peak_rss_mb` | `bench.py common-load <id>` |
+
+**What this gives up:** each stack now runs on different physical machines, provisioned on a different day. Spot hosts on different machines can differ a little in speed (noisy neighbors, memory and cache placement), and that difference now ends up between stacks instead of being shared by all of them. **This is accepted:** the instance type is the same, each vCPU is a dedicated physical core with no SMT, and the 5% tie rule absorbs small differences. It is stated in the video ([04 Known limitations](04-methodology.md#known-limitations-stated-in-the-video)).
+
+**What stays identical across sessions** (the campaign's **hardware spec**, recorded by session 1 and checked at the start of every later session): region and AZ, instance type per role, CPU model (`lscpu`), core count, AMI (pinned with `-var ami_id=… -var ami_id_arm64=…`), kernel, Docker / k6 / Postgres versions, and the git commit (`methodology-v1`). A session whose hosts don't match refuses to start; reprovision until they do. Instance IDs and `boot_id` are recorded per session but not compared: they are expected to change. Docker CE and containerd are pinned and held in `infra/host-setup/bootstrap.sh`, so a new session can't pick up a newer Docker.
+
+The common-load phase runs all 7 stacks in one session on purpose: the latency and memory scores then compare every stack on the same machines, at the same rate.
+
+## Flow of `run` (one session)
 
 ```
-for test in 2..9:                         # test-major order: one test across all stacks
-  for stack in shuffled(stacks, seed):     # randomized order, seed saved in manifest
-    ssh app:  docker compose -f stacks/<stack>/compose.yml build   # first time per stack: real build; later: cache hit
+for test in 2..9:                         # one stack per session, tests in order
+    ssh app:  docker compose -f stacks/<stack>/compose.yml build   # first test: real build; later tests: cache hit
               record image id (must match the stack's earlier tests)  # not implemented yet: today up uses --no-build
     ssh app:  docker compose -f stacks/<stack>/compose.yml down && up -d
     if test in (5, 9):                     # write tests only; read tests reuse the prewarmed DB
@@ -40,11 +54,11 @@ for test in 2..9:                         # test-major order: one test across al
         not recovered in 60 s → restart container + warm-up
     confirm the final rate (rerun once; step down on failure)
     record result row
-after all stacks: compute L_common, run common-load phase for test 9
-write results.csv, run scoring/score.py → scores.txt
+session 8 (common-load): compute L_common from all stacks' test 9 results, run 120 s per stack
+write results.csv, run scoring/score.py → scores.txt   # after session 8; partial results.csv after each session
 ```
 
-Test-major order means a mid-campaign environment change hits every stack in the same test, not one stack across all tests. Combined with the randomized order, that makes the comparison fairer.
+The body of each test is unchanged from the original test-major design; only the loop order changed (one stack per session instead of one test across all stacks).
 
 ## Reading the k6 summary
 
@@ -70,9 +84,10 @@ results/
   calibration.json                      # hand-written from the manual calibration
   sizing/                               # one-off host sizing tests (db-2026-10, k6-2026-10), not campaigns
   2026-11-02T0930Z-a1b2c3/              # campaign id = start time + git short sha (quick runs: quick-<name>)
-    manifest.json                       # git sha, bench.toml copy+hash, instance types & IDs,
-                                        # AMI, kernel, CPU model, Docker/k6/Postgres versions, stack image
-                                        # digests, shuffle seed, calibration results
+    manifest.json                       # git sha, bench.toml copy+hash, hardware spec (instance types,
+                                        # AMI, kernel, CPU model, Docker/k6/Postgres versions), calibration
+                                        # results, and one entry per session: date, stack, instance IDs,
+                                        # boot_ids, stack image digest, pauses
     calibration.json                    # hand-written from the manual calibration
     paused.json                         # only while paused by a spot interruption
     current.json                        # the pair in progress (used by resume)
@@ -140,19 +155,24 @@ All three hosts are persistent spot instances that **stop** (not terminate) when
 
 1. **Detect.** A background thread polls the spot interruption notice (`/latest/meta-data/spot/instance-action`, about 2 min warning) on all three hosts every 10 s, between and during steps. A host that fails 3 polls in a row over SSH (~30 s) counts as interrupted too. When a command fails or a step turns INVALID, the runner first polls again to check whether a host is going away, so an interruption is never reported as an INVALID setup.
 2. **Pause and save.** The runner kills the running k6 process, keeps every finished (stack, test) pair as it is (step files are already written atomically), writes no `result.json` for the **interrupted pair** and writes `paused.json` (time, host, reason, stack, test). It then exits with status 3 (`paused_spot`). Nothing is scored from a pair that saw an interruption, even if the notice came after its last step. When the pair is rerun, its unfinished steps are moved to `<stack>/<test>/discarded/<time>/`.
-3. **Wait.** Nothing runs until the hosts are back. When they are (`terraform apply -refresh-only`, then `./infra/host-setup/deploy.sh`, because the public IPs change), the operator runs `bench.py resume <campaign-id>`. This can be hours or another day later.
-4. **Check the hardware before continuing.** `resume` compares each host with the fingerprint stored in `manifest.json`: **instance type, instance ID, CPU model (`lscpu`), core count, AMI, kernel, Docker / k6 / Postgres versions**. If anything differs, `resume` refuses (exit 3) and the campaign stays paused until identical hardware is available again. It never continues on a different machine type. The check runs on every `resume`, not only after a pause.
-5. **Rerun what the move could have affected.**
-   - **app host was interrupted:** it now runs on a different physical machine. Every pair of the **current test** that already finished is rerun too, so all stacks in one test are always compared on the same physical machine. Earlier tests are kept (each test is scored on its own). The runner detects the move from the host's `boot_id` (stored in the manifest), so this also works when the loadgen died before it could write `paused.json`. The current test comes from `paused.json`, or else from `current.json` (the pair in progress). Results set aside this way are renamed `result.superseded-<time>.json`.
-   - **db or loadgen was interrupted:** only the interrupted pair is rerun. These hosts aren't measured, and the per-step validity checks (db and loadgen CPU, `dropped_iterations`, ethtool) keep proving their headroom.
+3. **Wait, or end the session.** When the hosts are back (`terraform apply -refresh-only`, then `./infra/host-setup/deploy.sh`, because the public IPs change), the operator runs `bench.py resume <campaign-id>`. If the pause drags on, copy the results, `terraform destroy`, and continue the same stack in a new session another day (`terraform apply` with the pinned AMIs, deploy, seed, `resume`).
+4. **Check the hardware before continuing.** `resume` compares each host with the campaign's hardware spec in `manifest.json`: **instance type, CPU model (`lscpu`), core count, AMI, kernel, Docker / k6 / Postgres versions**. If anything differs, `resume` refuses (exit 3) and the campaign stays paused until matching hardware is available. It never continues on a different machine type. The check runs on every `resume` and at the start of every session.
+5. **Rerun only the interrupted pair**, whichever host it was. Since stacks already run on different machines ([Sessions](#sessions-one-stack-per-day)), a move of the app host to another physical machine mid-session is no different from the next session's new hosts, so finished pairs are kept. (Before 2026-10-17 an app-host move reran the whole current test for every stack; that rule only made sense while all stacks shared one machine.)
 
-`terraform destroy` or `-replace` during a campaign is a re-provision, not an interruption: then **all** stacks are rerun ([04 fairness rules](04-methodology.md#fairness-rules)). Every pause and the reruns it caused are listed in the manifest.
+A `terraform destroy` and re-provision between or within sessions is allowed and reruns nothing, as long as the new hosts match the hardware spec. Every pause and session is listed in the manifest (a host restart after a pause starts a new session entry).
 
 ## Estimated duration
 
-Per (stack, test): reset ~40 s (+30 s DB recreate for tests 5 and 9) + smoke 10 s + warm-up 60 s + probe ~1.5 min + ~5 load steps × (45 s + ~15 s recovery) ≈ **8–9 min**, and it is about the same for fast and slow stacks.
-7 stacks × 8 tests ≈ **8 h**, plus the common-load phase (~30 min), the image builds (~30 min: one real build per stack, cache hits afterwards) and the occasional recovery restart. Adopting the confirmation step from [09 R5](09-review-findings.md#r5-the-max_rps-search-rewards-noise) adds one step per pair (~1 h).
+Per (stack, test): reset ~40 s (+30 s DB recreate for tests 5 and 9) + smoke 10 s + warm-up 60 s + probe ~1.5 min + ~5 load steps × (45 s + ~15 s recovery) + one confirmation step ([09 R5](09-review-findings.md#r5-the-max_rps-search-rewards-noise)) ≈ **9–10 min**, and it is about the same for fast and slow stacks.
 
-Where the time went compared with the first draft (~13 h): measure window 45 → 30 s, bisection resolution 3% → 5% (one step fewer per pair), probe starting at the warm-up's end rate with 10 s stages, a 10 s smoke, and no DB recreate for tests that don't write.
+| Session | Work | Time |
+|---|---|---|
+| 1–7, each | Provision, deploy, seed ~30 min · image build 1–10 min · 8 tests × ~9.5 min ≈ 75 min · copy results + destroy ~10 min | **~2 h** |
+| 8 | Provision, deploy, seed ~30 min · 7 × (image build + reset + smoke + warm-up + 120 s) ≈ 50 min · copy + destroy ~10 min | **~1.5 h** |
+| **Total** | | **~15.5 h of host time over 8 days** |
 
-Run it as **one unattended session** (start in the evening, collect in the morning). Idle hours with the hosts up cost as much as measured ones.
+Splitting into sessions costs ~3.5 h more than one long session (seven extra provision/deploy/seed rounds), but each session is short enough to watch, and an interruption or INVALID stop costs at most one stack's afternoon.
+
+Where the time went compared with the first draft (~13 h of measuring): measure window 45 → 30 s, bisection resolution 3% → 5% (one step fewer per pair), probe starting at the warm-up's end rate with 10 s stages, a 10 s smoke, and no DB recreate for tests that don't write.
+
+Idle hours with the hosts up cost as much as measured ones: destroy as soon as a session's results are copied.

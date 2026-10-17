@@ -43,9 +43,9 @@ A benchmark lab lives for a few days and holds no sensitive data, so the network
 
 There is no separate monitoring or aux host. Prometheus scraping ~5 targets every second and k6's remote-write (now to `localhost`) use well under one core, which doesn't justify a fourth instance. Both stay off the measured app host.
 
-**Only the scored campaign needs this full set.** Stacks, k6 scripts and the runner are developed locally with Docker.
+**Only the scored campaign needs this full set.** Stacks, k6 scripts and the runner are developed locally with Docker. The campaign is split into **one session per stack** (decided 2026-10-17): the three hosts are provisioned, run every test of one stack and are destroyed, and the next stack gets freshly provisioned hosts another day ([06](06-runner-and-results.md#sessions-one-stack-per-day)). Instance types, AZ and AMIs stay the same in every session; the physical machines don't.
 
-**All three hosts run on spot instances, for everything:** dev sessions, the manual calibration and the scored campaign (`use_spot = true`, persistent request, `stop` on interruption). An interruption never mixes hardware into the results: the runner pauses, keeps everything finished so far and continues only on identical hardware. The rules are in [06 · Spot interruptions](06-runner-and-results.md#spot-interruptions).
+**All three hosts run on spot instances, for everything:** dev sessions, the manual calibration and the scored campaign (`use_spot = true`, persistent request, `stop` on interruption). On an interruption the runner pauses, keeps everything finished so far and continues only on matching hardware (same instance type, CPU model and AMI). The rules are in [06 · Spot interruptions](06-runner-and-results.md#spot-interruptions).
 
 **Storage:** one gp3 root volume per host at the free baseline (3,000 IOPS, 125 MB/s), no extra data volumes. The ~0.5 GB dataset is served from RAM, so the disk only matters for WAL writes in tests 5 and 10. Postgres group commit batches those fsyncs. Calibration measures the write ceiling of test 5 ([04](04-methodology.md#when-postgres-is-the-bottleneck)). On the 4-core db host, CPU runs out before the disk (db-sizing test: 99% CPU at the test 5 ceiling), so IOPS/throughput are raised **only if** WAL fsync turns out to be the limit.
 
@@ -99,4 +99,4 @@ Grafana is off while anything is scored, so viewers can't affect a measurement. 
 
 - `infra/terraform/`: VPC, one public subnet, internet gateway, one security group, SSH key pair and the three instances (no placement group, see Network). Instance types, region, operator IP, `grafana_allowed_cidrs`, `grafana_public_view` and `use_spot` are variables. The Grafana admin password is a `random_password` resource.
 - `infra/host-setup/`: cloud-init and idempotent scripts for Docker, sysctl, ulimits, exporters, Postgres config and seeding.
-- **Lifecycle:** `terraform apply` → run the campaign → `terraform destroy`. Nothing is kept running between sessions. Results are copied to this repo before destroying.
+- **Lifecycle (every session):** `terraform apply` with the pinned AMIs → run one stack (or, in the last session, the common load) → copy results to this repo → `terraform destroy`. Nothing is kept running between sessions.
