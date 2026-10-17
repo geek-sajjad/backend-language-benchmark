@@ -44,22 +44,28 @@ fi
 for role in $ROLES; do wait_for_host "$role"; done
 
 # ------------------------------------------------------------ 3. repo
-RSYNC_COMMON=(
-  -az
-  --exclude=/results/ # written on the hosts (results, image digests); fetch-results.sh pulls them
-  --exclude=/runner/hosts.toml
-  --exclude=/infra/host-setup/.state/
-  --exclude=.terraform/ --exclude='*.tfstate' --exclude='*.tfstate.*' --exclude='*.tfvars'
-  --include=/k6/data/jwt/public.pem
-  --include=.gitignore # Laravel's placeholders say "*, !.gitignore": rsync reads "!" as "clear the rules"
-)
+# The file list comes from git (tracked + untracked-but-not-ignored), so the hosts get exactly what
+# a checkout has: rsync's own .gitignore parsing can't express git's "!" re-includes (Laravel's
+# storage/ placeholders). results/ is written on the hosts (fetch-results.sh pulls it) and
+# runner/hosts.toml by step 5. The JWT keys are git-ignored and added by hand.
+FILE_LIST="$(mktemp)"
+trap 'rm -f "$FILE_LIST" "$FILE_LIST.loadgen"' EXIT
+(cd "$REPO_ROOT" && git ls-files -z -co --exclude-standard |
+  python3 -c '
+import os, sys
+for f in sys.stdin.buffer.read().decode().split("\0"):
+    if f and os.path.lexists(f) and not f.startswith(("results/", "infra/host-setup/.state/")) and f != "runner/hosts.toml":
+        print(f)') >"$FILE_LIST"
+echo k6/data/jwt/public.pem >>"$FILE_LIST"
+{ cat "$FILE_LIST"; echo k6/data/jwt/private.pem; } >"$FILE_LIST.loadgen"
 for role in $ROLES; do
   log "$role: rsync repo -> $REMOTE_REPO"
-  keyrule=(--exclude=/k6/data/jwt/private.pem)
-  [[ "$role" == loadgen ]] && keyrule=(--include=/k6/data/jwt/private.pem)
+  list="$FILE_LIST"
+  [[ "$role" == loadgen ]] && list="$FILE_LIST.loadgen"
   # No --delete: files removed locally linger on the hosts (rebuild hosts for a clean slate).
-  rsync "${RSYNC_COMMON[@]}" "${keyrule[@]}" --filter=':- .gitignore' \
-    -e "$(ssh_cmd_string)" "$REPO_ROOT/" "$SSH_USER@$(pub_ip "$role"):$REMOTE_REPO/"
+  (cd "$REPO_ROOT" && rsync -az --files-from="$list" -e "$(ssh_cmd_string)" ./ "$SSH_USER@$(pub_ip "$role"):$REMOTE_REPO/")
+  # .git too, so the runner records the commit (manifest git_sha / git_dirty)
+  rsync -az -e "$(ssh_cmd_string)" "$REPO_ROOT/.git" "$SSH_USER@$(pub_ip "$role"):$REMOTE_REPO/"
 done
 
 local_pub_sha="$(openssl dgst -sha256 -r "$JWT_DIR/public.pem" | cut -d' ' -f1)"
