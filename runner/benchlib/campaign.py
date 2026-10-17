@@ -86,8 +86,9 @@ class Campaign:
             "created": utc_now().isoformat(),
             "mode": c.mode,
             "git_sha": git("rev-parse", "HEAD"),
-            # results/ and runner/hosts.toml are written on the hosts and never synced (deploy.sh)
-            "git_dirty": bool(git("status", "--porcelain", "--", ".", ":!results", ":!runner/hosts.toml")),
+            # written on the hosts and never synced (deploy.sh): results, hosts.toml, Prometheus targets
+            "git_dirty": bool(git("status", "--porcelain", "--", ".", ":!results", ":!runner/hosts.toml",
+                                  ":!monitoring/prometheus/targets")),
             "config_sha256": self.cfg.sha256,
             "shuffle_seed": seed,
             "stacks": list(stacks),

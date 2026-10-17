@@ -46,15 +46,17 @@ for role in $ROLES; do wait_for_host "$role"; done
 # ------------------------------------------------------------ 3. repo
 # The file list comes from git (tracked + untracked-but-not-ignored), so the hosts get exactly what
 # a checkout has: rsync's own .gitignore parsing can't express git's "!" re-includes (Laravel's
-# storage/ placeholders). results/ is written on the hosts (fetch-results.sh pulls it) and
-# runner/hosts.toml by step 5. The JWT keys are git-ignored and added by hand.
+# storage/ placeholders). Written on the hosts and never synced: results/ (fetch-results.sh pulls
+# it), runner/hosts.toml and the Prometheus targets (step 5; the committed copies point at
+# 127.0.0.1 and would undo the real IPs). The JWT keys are git-ignored and added by hand.
 FILE_LIST="$(mktemp)"
 trap 'rm -f "$FILE_LIST" "$FILE_LIST.loadgen"' EXIT
 (cd "$REPO_ROOT" && git ls-files -z -co --exclude-standard |
   python3 -c '
 import os, sys
 for f in sys.stdin.buffer.read().decode().split("\0"):
-    if f and os.path.lexists(f) and not f.startswith(("results/", "infra/host-setup/.state/")) and f != "runner/hosts.toml":
+    if f and os.path.lexists(f) and f != "runner/hosts.toml" and not f.startswith(
+            ("results/", "infra/host-setup/.state/", "monitoring/prometheus/targets/")):
         print(f)') >"$FILE_LIST"
 echo k6/data/jwt/public.pem >>"$FILE_LIST"
 { cat "$FILE_LIST"; echo k6/data/jwt/private.pem; } >"$FILE_LIST.loadgen"
