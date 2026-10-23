@@ -9,7 +9,7 @@ All parameters below live in [`config/bench.toml`](../config/bench.toml) and are
 | p95 latency | < 100 ms | step fails (app) |
 | p99 latency | < 250 ms | step fails (app) |
 | Error rate | < 1% (non-2xx, timeouts, connection errors; expected 422s in test 5 don't count) | step fails (app) |
-| k6 `dropped_iterations` | = 0 | **run invalid**: the load generator couldn't keep up. Exception: if the step already fails p95, p99 or the error rate, dropped iterations only mean k6 ran out of VUs waiting on a slow app, so the step is a normal **fail** |
+| k6 `dropped_iterations` in the settle tail + measure window (the last 35 s) | = 0 | **run invalid**: the load generator couldn't keep up. Exception: if the step already fails p95, p99 or the error rate, dropped iterations only mean k6 ran out of VUs waiting on a slow app, so the step is a normal **fail**. Drops in the first 10 s of settle (the app's start-up spike at a new rate) don't count, like every other settle check; the runner reads the window from k6's Prometheus counter, and the step file keeps k6's total too (decided 2026-10-17, after Node test 5 dropped 71 iterations in its first seconds and 0 afterwards) |
 | `ethtool` `*_allowance_exceeded` | no increase on app, db, loadgen | **run invalid**: network limit, not app |
 | db host CPU (Postgres + downstream mock) | < 70% average over the step | Tests 2–5 and 9: **not invalid**, the step is flagged `db_bound` (the db may be the bottleneck, see [below](#when-postgres-is-the-bottleneck)). Tests 1, 6, 7, 8 (no Postgres work; test 6 uses the downstream mock): **run invalid**, downstream headroom violated |
 | loadgen host CPU (k6 + Prometheus + Grafana) | < 70% average over the step | **run invalid**: generator headroom violated |

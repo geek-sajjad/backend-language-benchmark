@@ -139,7 +139,7 @@ The runner starts k6 with:
 K6_PROMETHEUS_RW_SERVER_URL=http://127.0.0.1:9090/api/v1/write \
 K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true \
 K6_PROMETHEUS_RW_PUSH_INTERVAL=1s \
-k6 run --out experimental-prometheus-rw --tag testid=rust-axum/3/step-12000 --tag stack=rust-axum --tag test=3 --tag phase=measure ...
+k6 run --out experimental-prometheus-rw --tag testid=rust-axum/3/a1-14-step-12000 --tag stack=rust-axum --tag test=3 --tag phase=measure ...
 ```
 
 Metrics arrive as `k6_http_reqs_total`, `k6_http_req_duration_seconds` (native histogram),

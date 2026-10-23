@@ -37,8 +37,11 @@ class Pair:
     def _k6(self, label, **kw):
         self.seq += 1
         path = self.out / "steps" / f"a{self.attempt}-{self.seq:02d}-{label}.summary.json"
-        tags = {"testid": f"{self.stack.name}/{self.test}/{label}", "stack": self.stack.name,
+        # unique per k6 run (attempt + sequence): a confirm rerun at the same rate must not share
+        # Prometheus series with the first run (step(): dropped iterations per window)
+        tags = {"testid": f"{self.stack.name}/{self.test}/a{self.attempt}-{self.seq:02d}-{label}", "stack": self.stack.name,
                 "test": str(self.test)}
+        self.last_testid = tags["testid"]
         return self.k6.run(self.test, path, tags=tags, **kw)
 
     def reset(self):
@@ -102,12 +105,24 @@ class Pair:
         s = self.search_cfg
         eth_before = self.cluster.ethtool()
         start = time.time()
-        n = self._k6(f"step-{int(rate)}", rate=rate, settle_s=s["settle_s"], tail_s=min(5, s["settle_s"]),
+        tail = min(5, s["settle_s"])
+        n = self._k6(f"step-{int(rate)}", rate=rate, settle_s=s["settle_s"], tail_s=tail,
                      measure_s=s["measure_s"])
-        end = start + s["settle_s"] + s["measure_s"]
+        # k6 starts sending after its VUs are initialised (seconds with a large pool), so the
+        # window is anchored at the end of the run, not at the launch
+        end = time.time()
         eth_after = self.cluster.ethtool()
         time.sleep(3 if self.prom.available() else 0)  # let the last 1 s scrapes land
         metrics = self.prom.window(end, s["measure_s"])
+        # The settle phase is excluded from all checks (04), but k6 counts dropped iterations over
+        # the whole run: drops at the jump to a new rate (app start-up spike) aren't the
+        # generator's fault. The validity check uses the settle tail + measure window from the
+        # Prometheus counter; the total stays in the record. Without Prometheus: the total.
+        n["dropped_total"] = n["dropped_iterations"]
+        windowed = self.prom.counter_delta("k6_dropped_iterations_total", self.last_testid,
+                                           end - s["measure_s"] - tail, end)
+        if windowed is not None:
+            n["dropped_iterations"] = int(round(windowed))
         state = self.stack.state() or {}
 
         verdict, reasons = self.judge(n, metrics, eth_before, eth_after, state)
@@ -119,8 +134,10 @@ class Pair:
             drift = abs(n["settle_tail_p99_ms"] - n["p99_ms"]) / n["p99_ms"]
             record["settle_unstable"] = drift > s["settle_unstable_threshold"]
         atomic_write_json(self.out / "steps" / f"a{self.attempt}-{self.seq:02d}-step-{int(rate)}.json", record)
+        startup = n["dropped_total"] - n["dropped_iterations"]
         log(f"  step {rate:>9.0f} req/s → {verdict:<4} p95 {fmt(n['p95_ms'])} p99 {fmt(n['p99_ms'])} "
-            f"err {n['error_rate']:.2%} dropped {n['dropped_iterations']} {' '.join(reasons)}")
+            f"err {n['error_rate']:.2%} dropped {n['dropped_iterations']}"
+            f"{f' (+{startup} at start)' if startup > 0 else ''} {' '.join(reasons)}")
         return record
 
     def judge(self, n, metrics, eth_before, eth_after, state):

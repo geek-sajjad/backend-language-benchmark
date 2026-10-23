@@ -51,5 +51,27 @@ class Prom:
             "pg_tps": q(f'sum(rate(pg_stat_database_xact_commit{{datname="bench"}}[{w}]))'),
         }
 
+    def counter_delta(self, metric, testid, start, end):
+        """Increase of a k6 counter for one run between start and end (summed over k6 processes).
+        Not increase(): a series that first appears with a non-zero value (drops in the first
+        second) would be missed. 0 if the run has no such series; None without Prometheus or on
+        any query error (the caller then falls back to k6's own total)."""
+        if not self.available():
+            return None
+        expr = f'sum(last_over_time({metric}{{testid="{testid}"}}[10m]))'
+        values = []
+        for at in (start, end):
+            params = urllib.parse.urlencode({"query": expr, "time": f"{at:.3f}"})
+            try:
+                with urllib.request.urlopen(f"{self.url}/api/v1/query?{params}", timeout=10) as r:
+                    body = json.loads(r.read())
+                result = body["data"]["result"]
+            except (OSError, KeyError, ValueError):
+                return None
+            if body.get("status") != "success":
+                return None
+            values.append(float(result[0]["value"][1]) if result else 0.0)
+        return max(0.0, values[1] - values[0])
+
     def app_cpu_now(self):
         return self.query('sum(rate(container_cpu_usage_seconds_total{name="app"}[5s]))', at=time.time())
