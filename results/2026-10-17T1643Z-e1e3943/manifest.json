@@ -9,7 +9,8 @@
   "stacks": [
     "node-nestjs",
     "python-fastapi",
-    "php-laravel"
+    "php-laravel",
+    "java-spring"
   ],
   "tests": [
     2,
@@ -480,6 +481,50 @@
         }
       },
       "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"892ce65165f598777c66d0b89eaae1831d63b774\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"php-laravel\": {\n      \"build_s\": 35,\n      \"built_at\": \"2026-11-10T09:16:31+00:00\",\n      \"compose\": \"stacks/php-laravel/compose.yml\",\n      \"created\": \"2026-11-10T09:16:27.264374439Z\",\n      \"images\": {\n        \"bench-php-laravel:local\": \"sha256:8ffc39b71328da29ac773bc96ba1ea97993790ce587e4d66fe45754cdd86e00d\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T09:16:31+00:00\"\n}"
+    },
+    {
+      "n": 6,
+      "kind": "run",
+      "started": "2026-11-10T09:59:40.435559+00:00",
+      "stacks": [
+        "java-spring"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0f8db52952931b9da",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "0a3c4948-3306-45a2-8ddc-6b89824f527c"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-02552864e45a854fd",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "d2b8bf77-5970-46a7-88b8-29f70c20aadb"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-09917581b5bafab24",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "3eee66b1-a11f-4a45-8838-a958f2e51c51"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"796913ba22dcc4de40b658745ce1835fde297831\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"java-spring\": {\n      \"build_s\": 23,\n      \"built_at\": \"2026-11-10T09:59:18+00:00\",\n      \"compose\": \"stacks/java-spring/compose.yml\",\n      \"created\": \"2026-11-10T09:59:15.732047425Z\",\n      \"images\": {\n        \"bench-java-spring:local\": \"sha256:9cf8be862f6e627a16afd6d9e59bcea87bb3cdd3546083eda21fa712c9a8eed0\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T09:59:18+00:00\"\n}"
     }
   ],
   "pauses": [

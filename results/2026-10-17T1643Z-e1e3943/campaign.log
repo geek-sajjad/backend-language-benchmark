@@ -397,3 +397,122 @@
 09:46:11   → ok, max_rps 655.97
 09:46:11 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (24 rows) and scores.txt
 09:46:11 still without a test 9 result: rust-axum, go-gin, java-spring, dotnet-aspnetcore
+09:59:40 session 6 (run): java-spring
+09:59:40 estimated duration: 1.3 h
+09:59:40 campaign 2026-10-17T1643Z-e1e3943: stacks ['java-spring'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+09:59:40 java-spring · test 2
+09:59:45   java-spring healthy after 3.72 s
+09:59:55   smoke ok, p50 1.73 ms
+10:02:15   probe: E = 16000 req/s (7 stages)
+10:03:21   step     12800 req/s → pass p95    0.53 p99    1.09 err 0.00% dropped 0 
+10:04:27   step     14720 req/s → pass p95    0.59 p99    1.44 err 0.00% dropped 0 
+10:05:33   step     16928 req/s → pass p95    0.68 p99    2.08 err 0.00% dropped 0 
+10:06:39   step     19467 req/s → pass p95    0.89 p99    2.99 err 0.00% dropped 0 
+10:07:45   step     22387 req/s → pass p95    5.19 p99   19.01 err 0.00% dropped 0 
+10:08:52   step     25745 req/s → pass p95    5.71 p99   23.21 err 0.00% dropped 0 
+10:10:03   step     29607 req/s → fail p95  342.09 p99 2759.95 err 4.48% dropped 30099 (+20947 at start) slo
+10:11:14   step     27676 req/s → fail p95  267.68 p99  437.20 err 0.98% dropped 2202 (+9264 at start) slo
+10:12:25   step     26710 req/s → fail p95  241.60 p99  553.69 err 2.07% dropped 18283 slo
+10:13:31   step     25745 req/s → pass p95   26.65 p99   69.92 err 0.00% dropped 0 
+10:13:48   → ok, max_rps 25745
+10:13:48 java-spring · test 3
+10:13:53   java-spring healthy after 3.73 s
+10:14:04   smoke ok, p50 2.28 ms
+10:16:08   probe: E = 8000 req/s (6 stages)
+10:17:14   step      6400 req/s → pass p95    1.37 p99    2.33 err 0.00% dropped 0 
+10:18:21   step      7360 req/s → pass p95    1.76 p99    3.39 err 0.00% dropped 0 db_bound
+10:19:27   step      8464 req/s → pass p95    6.61 p99   19.48 err 0.00% dropped 0 db_bound
+10:20:33   step      9734 req/s → fail p95  946.94 p99 1333.48 err 0.00% dropped 8305 slo db_bound
+10:21:39   step      9099 req/s → pass p95   24.54 p99   42.72 err 0.00% dropped 0 db_bound
+10:22:45   step      9416 req/s → pass p95   66.03 p99  112.50 err 0.00% dropped 0 db_bound
+10:23:51   step      9416 req/s → pass p95   67.84 p99  109.98 err 0.00% dropped 0 db_bound
+10:24:08   → ok, max_rps 9416
+10:24:08 java-spring · test 4
+10:24:13   java-spring healthy after 3.74 s
+10:24:24   smoke ok, p50 2.88 ms
+10:26:28   probe: E = 8000 req/s (6 stages)
+10:27:34   step      6400 req/s → pass p95    0.98 p99    1.85 err 0.00% dropped 0 
+10:28:40   step      7360 req/s → pass p95    1.13 p99    2.75 err 0.00% dropped 0 
+10:29:47   step      8464 req/s → pass p95    1.32 p99    3.36 err 0.00% dropped 0 
+10:30:53   step      9734 req/s → pass p95    1.50 p99    3.19 err 0.00% dropped 0 
+10:31:59   step     11194 req/s → pass p95    2.49 p99    5.24 err 0.00% dropped 0 db_bound
+10:33:05   step     12873 req/s → fail p95  638.88 p99 1074.01 err 0.00% dropped 3731 slo db_bound
+10:34:11   step     12034 req/s → pass p95   19.16 p99   51.40 err 0.00% dropped 0 db_bound
+10:35:18   step     12454 req/s → fail p95 1259.77 p99 1902.33 err 0.00% dropped 10897 slo db_bound
+10:36:24   step     12034 req/s → fail p95   88.14 p99  290.51 err 0.00% dropped 0 slo db_bound
+10:37:30   step     11432 req/s → pass p95    6.82 p99   15.36 err 0.00% dropped 0 db_bound
+10:37:46   → ok, max_rps 11432
+10:37:46 java-spring · test 5
+10:37:46   recreate bench from bench_template
+10:37:57   java-spring healthy after 3.82 s
+10:38:08   smoke ok, p50 5.36 ms
+10:40:01   probe: E = 4000 req/s (5 stages)
+10:41:09   step      3200 req/s → pass p95    4.15 p99    5.81 err 0.00% dropped 0 
+10:42:15   step      3680 req/s → pass p95    4.40 p99    6.66 err 0.00% dropped 0 
+10:43:21   step      4232 req/s → pass p95    4.80 p99    6.44 err 0.00% dropped 0 
+10:44:28   step      4867 req/s → pass p95    5.34 p99    8.17 err 0.00% dropped 0 db_bound
+10:45:35   step      5597 req/s → pass p95    7.11 p99   12.14 err 0.00% dropped 0 db_bound
+10:46:42   step      6437 req/s → pass p95   23.79 p99   51.08 err 0.00% dropped 0 db_bound
+10:47:50   step      7403 req/s → fail p95 1153.63 p99 1695.40 err 0.00% dropped 20284 (+3920 at start) slo db_bound
+10:48:58   step      6920 req/s → fail p95  161.65 p99  267.47 err 0.00% dropped 0 slo db_bound
+10:50:06   step      6678 req/s → fail p95  158.03 p99  287.77 err 0.00% dropped 0 slo db_bound
+10:51:13   step      6437 req/s → pass p95   26.18 p99   50.44 err 0.00% dropped 0 db_bound
+10:51:32   → ok, max_rps 6437
+10:51:32 java-spring · test 6
+10:51:37   java-spring healthy after 3.81 s
+10:51:48   smoke ok, p50 52.29 ms
+10:53:52   probe: E = 8000 req/s (6 stages)
+10:54:59   step      6400 req/s → fail p95  822.17 p99  883.60 err 0.00% dropped 50159 (+17175 at start) slo
+10:56:05   step      4800 req/s → fail p95  644.06 p99  700.35 err 0.00% dropped 8802 (+5583 at start) slo
+10:57:11   step      3600 req/s → fail p95  202.42 p99  242.96 err 0.00% dropped 87 slo
+10:58:17   step      2700 req/s → pass p95   52.14 p99   53.16 err 0.00% dropped 0 
+10:59:23   step      3150 req/s → pass p95   53.88 p99   57.06 err 0.00% dropped 0 
+11:00:29   step      3375 req/s → pass p95   83.86 p99  103.55 err 0.00% dropped 0 
+11:01:35   step      3488 req/s → fail p95  115.82 p99  137.21 err 0.00% dropped 0 slo
+11:02:41   step      3375 req/s → pass p95   78.86 p99   99.94 err 0.00% dropped 0 
+11:02:57   → ok, max_rps 3375
+11:02:57 java-spring · test 7
+11:03:03   java-spring healthy after 3.79 s
+11:03:14   smoke ok, p50 1.01 ms
+11:05:33   probe: E = 16000 req/s (7 stages)
+11:06:39   step     12800 req/s → pass p95    0.28 p99    0.74 err 0.00% dropped 0 
+11:07:45   step     14720 req/s → pass p95    0.32 p99    0.90 err 0.00% dropped 0 
+11:08:51   step     16928 req/s → pass p95    0.40 p99    1.36 err 0.00% dropped 0 
+11:09:57   step     19467 req/s → pass p95    0.54 p99    1.85 err 0.00% dropped 0 
+11:11:04   step     22387 req/s → pass p95    0.88 p99    2.55 err 0.00% dropped 0 
+11:12:10   step     25745 req/s → pass p95    1.78 p99    4.88 err 0.00% dropped 0 
+11:13:16   step     29607 req/s → pass p95    5.82 p99   13.70 err 0.00% dropped 0 
+11:14:28   step     34048 req/s → fail p95  308.03 p99  367.08 err 0.42% dropped 2615 slo
+11:15:35   step     31828 req/s → pass p95   46.11 p99   64.40 err 0.00% dropped 0 
+11:16:42   step     32938 req/s → fail p95  202.73 p99  271.16 err 0.03% dropped 15 slo
+11:17:48   step     31828 req/s → pass p95   59.23 p99  116.41 err 0.00% dropped 0 
+11:18:05   → ok, max_rps 31828
+11:18:05 java-spring · test 8
+11:18:10   java-spring healthy after 3.77 s
+11:18:21   smoke ok, p50 1.05 ms
+11:21:00   probe: E = 12800 req/s (9 stages)
+11:22:06   step     10240 req/s → pass p95    0.46 p99    1.39 err 0.00% dropped 0 
+11:23:12   step     11776 req/s → pass p95    0.54 p99    1.51 err 0.00% dropped 0 
+11:24:18   step     13542 req/s → pass p95    1.52 p99    5.77 err 0.00% dropped 0 
+11:25:24   step     15573 req/s → pass p95    7.77 p99   25.71 err 0.00% dropped 0 
+11:26:30   step     17909 req/s → fail p95  321.92 p99  453.11 err 0.00% dropped 1933 slo
+11:27:37   step     16741 req/s → pass p95   53.26 p99   90.37 err 0.00% dropped 0 
+11:28:43   step     17325 req/s → fail p95  118.49 p99  129.81 err 0.00% dropped 0 slo
+11:29:49   step     16741 req/s → pass p95   23.57 p99   71.84 err 0.00% dropped 0 
+11:30:06   → ok, max_rps 16741
+11:30:06 java-spring · test 9
+11:30:06   recreate bench from bench_template
+11:30:15   java-spring healthy after 3.8 s
+11:30:26   smoke ok, p50 2.86 ms
+11:32:33   probe: E = 8000 req/s (6 stages)
+11:33:39   step      6400 req/s → pass p95   51.37 p99   51.89 err 0.00% dropped 0 
+11:34:46   step      7360 req/s → pass p95   51.45 p99   52.38 err 0.00% dropped 0 
+11:35:52   step      8464 req/s → pass p95   51.48 p99   52.24 err 0.00% dropped 0 
+11:36:59   step      9734 req/s → pass p95   51.64 p99   52.65 err 0.00% dropped 0 
+11:38:07   step     11194 req/s → fail p95  652.21 p99  857.77 err 0.00% dropped 2607 slo
+11:39:14   step     10464 req/s → pass p95   54.27 p99   73.52 err 0.00% dropped 0 
+11:40:21   step     10829 req/s → fail p95  577.94 p99  808.17 err 0.00% dropped 1577 slo
+11:41:28   step     10464 req/s → pass p95   56.45 p99   83.69 err 0.00% dropped 0 
+11:41:45   → ok, max_rps 10464.77
+11:41:45 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (32 rows) and scores.txt
+11:41:45 still without a test 9 result: rust-axum, go-gin, dotnet-aspnetcore
