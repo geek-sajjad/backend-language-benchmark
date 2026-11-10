@@ -140,3 +140,135 @@
 18:54:29   → ok, max_rps 9426.93
 18:54:30 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (8 rows) and scores.txt
 18:54:30 still without a test 9 result: rust-axum, go-gin, python-fastapi, java-spring, dotnet-aspnetcore, php-laravel
+05:55:16 session 2 (run): python-fastapi
+05:55:16 estimated duration: 1.3 h
+05:55:16 campaign 2026-10-17T1643Z-e1e3943: stacks ['python-fastapi'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+05:55:16 python-fastapi · test 2
+05:55:19   python-fastapi healthy after 1.79 s
+05:55:30   smoke ok, p50 1.45 ms
+05:57:23   probe: E = 4000 req/s (5 stages)
+05:58:30   step      3200 req/s → pass p95    2.28 p99    4.64 err 0.00% dropped 0 
+05:59:35   step      3680 req/s → pass p95    3.91 p99   10.24 err 0.00% dropped 0 
+06:00:41   step      4232 req/s → pass p95   10.00 p99   74.91 err 0.00% dropped 0 
+06:01:47   step      4867 req/s → fail p95 1848.85 p99 3153.12 err 0.11% dropped 7079 slo
+06:02:53   step      4550 req/s → fail p95   38.42 p99  252.11 err 0.00% dropped 0 slo
+06:03:59   step      4391 req/s → pass p95   14.16 p99  111.81 err 0.00% dropped 0 
+06:05:05   step      4391 req/s → pass p95   12.33 p99  118.10 err 0.00% dropped 0 
+06:05:21   → ok, max_rps 4391
+06:05:21 python-fastapi · test 3
+06:05:25   python-fastapi healthy after 2.15 s
+06:05:35   smoke ok, p50 2.34 ms
+06:07:18   probe: E = 2000 req/s (4 stages)
+06:08:24   step      1600 req/s → pass p95    3.04 p99    4.14 err 0.00% dropped 0 
+06:09:30   step      1840 req/s → pass p95    3.12 p99    4.61 err 0.00% dropped 0 
+06:10:36   step      2116 req/s → pass p95    4.40 p99    9.72 err 0.00% dropped 0 
+06:11:41   step      2433 req/s → pass p95    6.29 p99   15.45 err 0.00% dropped 0 
+06:12:47   step      2798 req/s → pass p95   15.15 p99   67.05 err 0.00% dropped 0 
+06:13:53   step      3218 req/s → fail p95 2695.79 p99 4412.83 err 0.57% dropped 10858 (+2115 at start) slo
+06:14:59   step      3008 req/s → fail p95  656.87 p99 1414.08 err 0.00% dropped 376 slo
+06:16:05   step      2903 req/s → pass p95   22.63 p99  157.87 err 0.00% dropped 0 
+06:17:11   step      2903 req/s → fail p95  104.17 p99  328.12 err 0.00% dropped 0 slo
+06:17:44 SPOT INTERRUPTION: app: spot notice {"action":"stop","time":"2026-11-10T06:19:32Z"}
+06:17:45 PAUSED (paused_spot): app: spot notice {"action":"stop","time":"2026-11-10T06:19:32Z"} during python-fastapi test 3
+06:17:45 results so far are saved. When the hosts run again: terraform apply -refresh-only, deploy.sh, then python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+06:24:39 resuming after pause (app: spot notice {"action":"stop","time":"2026-11-10T06:19:32Z"}); only python-fastapi test 3 is rerun
+06:24:43 session 3 (run): python-fastapi
+06:24:43 campaign 2026-10-17T1643Z-e1e3943: stacks ['python-fastapi'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+06:24:43 python-fastapi · test 3
+06:24:43   unfinished earlier attempt moved to python-fastapi/3/discarded/20261110T062443Z
+06:24:47   python-fastapi healthy after 3.05 s
+06:24:57   smoke ok, p50 2.39 ms
+06:26:40   probe: E = 2000 req/s (4 stages)
+06:27:47   step      1600 req/s → pass p95    2.79 p99    3.52 err 0.00% dropped 0 
+06:28:53   step      1840 req/s → pass p95    2.99 p99    3.94 err 0.00% dropped 0 
+06:29:58   step      2116 req/s → pass p95    4.12 p99   10.99 err 0.00% dropped 0 
+06:31:04   step      2433 req/s → pass p95    5.53 p99   12.69 err 0.00% dropped 0 
+06:32:10   step      2798 req/s → pass p95   13.35 p99   46.00 err 0.00% dropped 0 
+06:33:16   step      3218 req/s → fail p95 2614.94 p99 4375.28 err 0.57% dropped 9083 (+1037 at start) slo
+06:34:22   step      3008 req/s → pass p95   44.76 p99  178.88 err 0.00% dropped 0 
+06:35:28   step      3113 req/s → fail p95 2131.65 p99 3973.36 err 0.40% dropped 3756 slo
+06:36:34   step      3008 req/s → pass p95   33.29 p99  170.90 err 0.00% dropped 0 
+06:36:51   → ok, max_rps 3008
+06:36:51 python-fastapi · test 4
+06:36:55   python-fastapi healthy after 2.15 s
+06:37:05   smoke ok, p50 3.13 ms
+06:38:38   probe: E = 1000 req/s (3 stages)
+06:39:43   step       800 req/s → pass p95    3.71 p99    4.57 err 0.00% dropped 0 
+06:40:49   step       920 req/s → pass p95    4.08 p99    5.49 err 0.00% dropped 0 
+06:41:55   step      1058 req/s → pass p95    4.35 p99    6.44 err 0.00% dropped 0 
+06:43:01   step      1217 req/s → pass p95    5.01 p99    9.97 err 0.00% dropped 0 
+06:44:07   step      1400 req/s → pass p95    5.51 p99   11.16 err 0.00% dropped 0 
+06:45:12   step      1610 req/s → pass p95   12.68 p99   32.72 err 0.00% dropped 0 
+06:46:18   step      1851 req/s → pass p95   26.48 p99   80.00 err 0.00% dropped 0 
+06:47:25   step      2129 req/s → fail p95 2762.60 p99 4499.92 err 0.65% dropped 10975 (+2283 at start) slo
+06:48:31   step      1990 req/s → fail p95 2561.26 p99 4293.07 err 0.53% dropped 5109 slo
+06:49:37   step      1920 req/s → fail p95  134.80 p99  317.67 err 0.00% dropped 0 slo
+06:50:42   step      1851 req/s → pass p95   44.74 p99  172.59 err 0.00% dropped 0 
+06:50:59   → ok, max_rps 1851
+06:50:59 python-fastapi · test 5
+06:50:59   recreate bench from bench_template
+06:51:06   python-fastapi healthy after 1.75 s
+06:51:17   smoke ok, p50 5.19 ms
+06:52:49   probe: E = 1000 req/s (3 stages)
+06:53:56   step       800 req/s → pass p95   11.44 p99   14.69 err 0.00% dropped 0 
+06:55:02   step       920 req/s → pass p95   15.09 p99   23.05 err 0.00% dropped 0 
+06:56:08   step      1058 req/s → pass p95   19.54 p99   35.12 err 0.00% dropped 0 
+06:57:15   step      1217 req/s → pass p95   39.63 p99   80.66 err 0.00% dropped 0 
+06:58:22   step      1400 req/s → fail p95 2070.45 p99 3636.98 err 0.20% dropped 3122 (+262 at start) slo
+06:59:28   step      1308 req/s → fail p95  114.27 p99  284.11 err 0.00% dropped 0 slo
+07:00:34   step      1262 req/s → pass p95   55.01 p99  111.92 err 0.00% dropped 0 
+07:01:41   step      1262 req/s → pass p95   41.53 p99   80.06 err 0.00% dropped 0 
+07:01:58   → ok, max_rps 1262
+07:01:58 python-fastapi · test 6
+07:02:02   python-fastapi healthy after 2.15 s
+07:02:12   smoke ok, p50 52.31 ms
+07:03:45   probe: E = 1000 req/s (3 stages)
+07:04:52   step       800 req/s → pass p95   53.14 p99   54.79 err 0.00% dropped 0 
+07:05:58   step       920 req/s → pass p95   53.63 p99   58.27 err 0.00% dropped 0 
+07:07:03   step      1058 req/s → pass p95   53.77 p99   57.70 err 0.00% dropped 0 
+07:08:10   step      1217 req/s → fail p95 1681.93 p99 2743.82 err 0.02% dropped 5837 slo
+07:09:15   step      1138 req/s → fail p95   56.79 p99  456.90 err 0.00% dropped 0 slo
+07:10:21   step      1098 req/s → pass p95   53.93 p99   56.72 err 0.00% dropped 0 
+07:11:27   step      1098 req/s → pass p95   54.32 p99   91.14 err 0.00% dropped 0 
+07:11:43   → ok, max_rps 1098
+07:11:43 python-fastapi · test 7
+07:11:47   python-fastapi healthy after 2.19 s
+07:11:58   smoke ok, p50 0.78 ms
+07:14:03   probe: E = 8000 req/s (6 stages)
+07:15:09   step      6400 req/s → pass p95    1.14 p99    3.04 err 0.00% dropped 0 
+07:16:15   step      7360 req/s → pass p95    1.80 p99    5.79 err 0.00% dropped 0 
+07:17:21   step      8464 req/s → pass p95    3.55 p99   12.33 err 0.00% dropped 0 
+07:18:27   step      9734 req/s → pass p95   20.01 p99   46.09 err 0.00% dropped 0 
+07:19:35   step     11194 req/s → fail p95  285.74 p99  921.43 err 5.78% dropped 3913 (+3026 at start) slo
+07:20:43   step     10464 req/s → fail p95  318.09 p99  420.18 err 1.11% dropped 333 (+371 at start) slo
+07:21:49   step     10099 req/s → pass p95   42.52 p99   58.14 err 0.00% dropped 0 
+07:22:55   step     10099 req/s → pass p95   45.06 p99   61.62 err 0.00% dropped 0 
+07:23:12   → ok, max_rps 10099
+07:23:12 python-fastapi · test 8
+07:23:15   python-fastapi healthy after 2.15 s
+07:23:26   smoke ok, p50 2.97 ms
+07:25:31   probe: E = 1600 req/s (6 stages)
+07:26:37   step      1280 req/s → pass p95    5.04 p99    9.28 err 0.00% dropped 0 
+07:27:43   step      1472 req/s → pass p95   10.19 p99   51.00 err 0.00% dropped 0 
+07:28:49   step      1693 req/s → pass p95   42.39 p99   90.66 err 0.00% dropped 0 
+07:29:56   step      1947 req/s → fail p95  387.55 p99 5000.24 err 3.89% dropped 2339 (+489 at start) slo
+07:31:03   step      1820 req/s → fail p95  481.76 p99  646.12 err 0.43% dropped 183 (+80 at start) slo
+07:32:09   step      1756 req/s → fail p95  105.18 p99  136.39 err 0.00% dropped 0 slo
+07:33:14   step      1693 req/s → pass p95   36.70 p99   82.42 err 0.00% dropped 0 
+07:33:31   → ok, max_rps 1693
+07:33:31 python-fastapi · test 9
+07:33:31   recreate bench from bench_template
+07:33:39   python-fastapi healthy after 2.14 s
+07:33:50   smoke ok, p50 2.32 ms
+07:35:36   probe: E = 2000 req/s (4 stages)
+07:36:42   step      1600 req/s → pass p95   53.88 p99   56.61 err 0.00% dropped 0 
+07:37:48   step      1840 req/s → pass p95   54.74 p99   58.64 err 0.00% dropped 0 
+07:38:54   step      2116 req/s → pass p95   57.22 p99   67.49 err 0.00% dropped 0 
+07:40:00   step      2433 req/s → pass p95   67.38 p99  119.34 err 0.00% dropped 0 
+07:41:09   step      2798 req/s → fail p95 3191.84 p99 5000.16 err 1.85% dropped 3791 (+364 at start) slo
+07:42:18   step      2616 req/s → fail p95 2791.79 p99 5000.05 err 1.11% dropped 2119 (+15 at start) slo
+07:43:26   step      2524 req/s → fail p95 2188.65 p99 4231.37 err 0.57% dropped 1070 slo
+07:44:32   step      2433 req/s → pass p95   67.29 p99  122.35 err 0.00% dropped 0 
+07:44:49   → ok, max_rps 2433.33
+07:44:49 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (16 rows) and scores.txt
+07:44:49 still without a test 9 result: rust-axum, go-gin, java-spring, dotnet-aspnetcore, php-laravel

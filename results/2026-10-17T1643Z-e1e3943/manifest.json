@@ -7,7 +7,8 @@
   "config_sha256": "9246c1bb7d56c3b46dd2fca5299116e638f4ac279fc3fc5b93cab7337c475252",
   "shuffle_seed": 206980261,
   "stacks": [
-    "node-nestjs"
+    "node-nestjs",
+    "python-fastapi"
   ],
   "tests": [
     2,
@@ -302,6 +303,106 @@
         }
       },
       "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"23f0e4c6d7fda713c9cf441a351b1d1b6b59d413\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"node-nestjs\": {\n      \"build_s\": 19,\n      \"built_at\": \"2026-10-17T14:00:10+00:00\",\n      \"compose\": \"stacks/node-nestjs/compose.yml\",\n      \"created\": \"2026-10-17T14:00:05.830826459Z\",\n      \"images\": {\n        \"bench-node-nestjs:local\": \"sha256:b7ae29b2e24f763f0bfe504940cd1b96851d008603e6e2e3fba5c9a63158d888\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-10-17T14:00:10+00:00\"\n}"
+    },
+    {
+      "n": 2,
+      "kind": "run",
+      "started": "2026-11-10T05:55:16.874255+00:00",
+      "stacks": [
+        "python-fastapi"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0a9d8b90335a7ac4f",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "517fb3a3-812c-4bc1-ae11-a5e09cb351df"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0316e1be976a580af",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "79c54180-1122-4657-ad7e-535be4ffc1bf"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-010912603c2ed3447",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "c91e6a32-e023-4593-9969-a513e7d5cbe5"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"384ee0c53e0663e059aaa2369c51b3b1483e7a57\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"python-fastapi\": {\n      \"build_s\": 13,\n      \"built_at\": \"2026-11-10T05:49:43+00:00\",\n      \"compose\": \"stacks/python-fastapi/compose.yml\",\n      \"created\": \"2026-11-10T05:49:38.289302721Z\",\n      \"images\": {\n        \"bench-python-fastapi:local\": \"sha256:55e4e79b986a9fb48a21e831dece1778b216c7ec495e92e7d5328bd807436b57\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T05:49:43+00:00\"\n}"
+    },
+    {
+      "n": 3,
+      "kind": "run",
+      "started": "2026-11-10T06:24:43.141345+00:00",
+      "stacks": [
+        "python-fastapi"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0a9d8b90335a7ac4f",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "7df2a78b-2b23-4800-b520-a6c33b6a1629"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0316e1be976a580af",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "79c54180-1122-4657-ad7e-535be4ffc1bf"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-010912603c2ed3447",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "c91e6a32-e023-4593-9969-a513e7d5cbe5"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"384ee0c53e0663e059aaa2369c51b3b1483e7a57\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"python-fastapi\": {\n      \"build_s\": 13,\n      \"built_at\": \"2026-11-10T05:49:43+00:00\",\n      \"compose\": \"stacks/python-fastapi/compose.yml\",\n      \"created\": \"2026-11-10T05:49:38.289302721Z\",\n      \"images\": {\n        \"bench-python-fastapi:local\": \"sha256:55e4e79b986a9fb48a21e831dece1778b216c7ec495e92e7d5328bd807436b57\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T05:49:43+00:00\"\n}"
+    }
+  ],
+  "pauses": [
+    {
+      "paused": {
+        "time": "2026-11-10T06:17:45.019251+00:00",
+        "host": "app",
+        "reason": "spot notice {\"action\":\"stop\",\"time\":\"2026-11-10T06:19:32Z\"}",
+        "stack": "python-fastapi",
+        "test": 3
+      },
+      "resumed": "2026-11-10T06:24:39.035058+00:00"
     }
   ]
 }

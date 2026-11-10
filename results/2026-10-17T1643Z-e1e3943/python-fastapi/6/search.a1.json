@@ -1,0 +1,312 @@
+{
+  "stack": "python-fastapi",
+  "test": 6,
+  "attempt": 1,
+  "startup_s": 2.15,
+  "estimate": 1000.0,
+  "probe": [
+    {
+      "rate": 500,
+      "ok": true,
+      "p95_ms": 52.332215,
+      "p99_ms": 52.852706,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 1000.0,
+      "ok": true,
+      "p95_ms": 52.946406,
+      "p99_ms": 53.660017,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 2000.0,
+      "ok": false,
+      "p95_ms": 2900.6328865,
+      "p99_ms": 4406.2296074999995,
+      "error_rate": 0.0032325098129762178,
+      "dropped_iterations": 10206
+    }
+  ],
+  "probe_recovery": {
+    "recovery_s": 16.3,
+    "recovery_restart": false
+  },
+  "steps": [
+    {
+      "rate": 800,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794294242.6357613,
+      "mode": "step",
+      "requests": 24000,
+      "iterations": 24000,
+      "measured_rps": 800.0,
+      "p50_ms": 51.950491,
+      "p95_ms": 53.14365845,
+      "p99_ms": 54.794966599999995,
+      "max_ms": 133.388501,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 53.343117,
+      "checks_failed": 0,
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 0.9435345016229792,
+        "app_rss_mb": 404.7,
+        "app_host_cpu": 0.2695689655172393,
+        "db_cpu": 0.05818965517240593,
+        "loadgen_cpu": 0.017952586206898324,
+        "pg_tps": 0.20689655172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.2,
+      "recovery_restart": false
+    },
+    {
+      "rate": 920,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794294308.7016556,
+      "mode": "step",
+      "requests": 27601,
+      "iterations": 27601,
+      "measured_rps": 920.03,
+      "p50_ms": 52.013165,
+      "p95_ms": 53.631907,
+      "p99_ms": 58.271014,
+      "max_ms": 236.241302,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 58.41130420000001,
+      "checks_failed": 0,
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.1591534705392001,
+        "app_rss_mb": 404.8,
+        "app_host_cpu": 0.31732758620689605,
+        "db_cpu": 0.0568103448275874,
+        "loadgen_cpu": 0.019892241379311337,
+        "pg_tps": 0.20689655172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 1058,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794294374.6656597,
+      "mode": "step",
+      "requests": 31741,
+      "iterations": 31741,
+      "measured_rps": 1058.03,
+      "p50_ms": 52.023336,
+      "p95_ms": 53.771498,
+      "p99_ms": 57.698373599999854,
+      "max_ms": 418.945898,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 72.6746301000003,
+      "checks_failed": 0,
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.3238932062532691,
+        "app_rss_mb": 404.8,
+        "app_host_cpu": 0.3598275862068947,
+        "db_cpu": 0.06017241379309968,
+        "loadgen_cpu": 0.020797413793102626,
+        "pg_tps": 0.20689655172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 1217,
+      "verdict": "fail",
+      "reasons": [
+        "slo"
+      ],
+      "db_bound": false,
+      "started": 1794294440.4125342,
+      "mode": "step",
+      "requests": 30676,
+      "iterations": 30676,
+      "measured_rps": 1022.53,
+      "p50_ms": 149.0356445,
+      "p95_ms": 1681.927623,
+      "p99_ms": 2743.8237995,
+      "max_ms": 5000.85397,
+      "error_rate": 0.00019559264571652107,
+      "dropped_iterations": 5837,
+      "settle_tail_p99_ms": 1012.0286601700002,
+      "checks_failed": 0,
+      "dropped_total": 5837,
+      "metrics": {
+        "app_cpu_cores": 3.2996109963354834,
+        "app_rss_mb": 404.8,
+        "app_host_cpu": 0.8923275862068965,
+        "db_cpu": 0.059999999999992504,
+        "loadgen_cpu": 0.02170258620689791,
+        "pg_tps": 0.20689655172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 1138,
+      "verdict": "fail",
+      "reasons": [
+        "slo"
+      ],
+      "db_bound": false,
+      "started": 1794294506.6586804,
+      "mode": "step",
+      "requests": 34141,
+      "iterations": 34141,
+      "measured_rps": 1138.03,
+      "p50_ms": 52.097575,
+      "p95_ms": 56.785692,
+      "p99_ms": 456.89616679999693,
+      "max_ms": 2870.571506,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 55.191792789999994,
+      "checks_failed": 0,
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.536177603326777,
+        "app_rss_mb": 404.8,
+        "app_host_cpu": 0.4337931034482754,
+        "db_cpu": 0.06474137931034674,
+        "loadgen_cpu": 0.022090517241379337,
+        "pg_tps": 0.20689655172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.0,
+      "recovery_restart": false
+    },
+    {
+      "rate": 1098,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794294572.4158802,
+      "mode": "step",
+      "requests": 32940,
+      "iterations": 32940,
+      "measured_rps": 1098.0,
+      "p50_ms": 52.045864,
+      "p95_ms": 53.9291685,
+      "p99_ms": 56.719283100000006,
+      "max_ms": 220.536876,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 56.47375901999993,
+      "checks_failed": 0,
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.368933672848322,
+        "app_rss_mb": 404.8,
+        "app_host_cpu": 0.37560344827586345,
+        "db_cpu": 0.06353448275861973,
+        "loadgen_cpu": 0.022306034482759474,
+        "pg_tps": 0.27586206896551724
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 1098,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794294638.174781,
+      "mode": "step",
+      "requests": 32942,
+      "iterations": 32942,
+      "measured_rps": 1098.07,
+      "p50_ms": 52.1380895,
+      "p95_ms": 54.319956,
+      "p99_ms": 91.14087760000001,
+      "max_ms": 884.343617,
+      "error_rate": 0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 54.9553455,
+      "checks_failed": 0,
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.4339258137282336,
+        "app_rss_mb": 404.8,
+        "app_host_cpu": 0.3981896551724142,
+        "db_cpu": 0.0637931034482806,
+        "loadgen_cpu": 0.02122844827587067,
+        "pg_tps": 0.27586206896551724
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 16.1,
+      "recovery_restart": false,
+      "confirmation": true
+    }
+  ],
+  "converged": true,
+  "confirmed": true,
+  "events": [],
+  "image": "sha256:55e4e79b986a9fb48a21e831dece1778b216c7ec495e92e7d5328bd807436b57",
+  "peak_rss_search_mb": 404.8,
+  "status": "ok",
+  "max_rps": 1098,
+  "best_step": 1098,
+  "db_bound": false,
+  "settle_unstable": true,
+  "db_bound_steps": 0
+}
