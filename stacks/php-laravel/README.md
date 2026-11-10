@@ -84,7 +84,7 @@ rm -rf vendor
 
 ## Pinned packages
 
-The `Dockerfile` installs exact Debian versions of the two runtime packages that come from apt: `nginx=1.26.3-3+deb13u9` and `libpq-dev=17.11-0+deb13u1` (which brings the `libpq5` that `pdo_pgsql` uses), so every rebuild gets the same binaries, as the other stacks do through image digests. Debian's archive keeps only the newest version of a package in trixie and trixie-security, so once Debian ships an update the build fails with `Version '…' for '…' was not found`. Then look up the current versions, update both pins, rebuild and rerun conformance:
+The `Dockerfile` installs exact Debian versions of the two runtime packages that come from apt: `nginx=1.26.3-3+deb13u10` and `libpq-dev=17.11-0+deb13u1` (which brings the `libpq5` that `pdo_pgsql` uses), so every rebuild gets the same binaries, as the other stacks do through image digests. Debian's archive keeps only the newest version of a package in trixie and trixie-security, so once Debian ships an update the build fails with `Version '…' for '…' was not found`. Then look up the current versions, update both pins, rebuild and rerun conformance:
 
 ```bash
 docker run --rm php:8.5.11-fpm-trixie sh -c 'apt-get update -qq && apt-cache policy nginx libpq-dev | grep -E "^[a-z]|Candidate"'
