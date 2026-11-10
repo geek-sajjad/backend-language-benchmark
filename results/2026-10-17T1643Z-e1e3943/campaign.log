@@ -516,3 +516,129 @@
 11:41:45   → ok, max_rps 10464.77
 11:41:45 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (32 rows) and scores.txt
 11:41:45 still without a test 9 result: rust-axum, go-gin, dotnet-aspnetcore
+11:45:05 estimated duration: 1.3 h
+11:45:05 campaign 2026-10-17T1643Z-e1e3943: stacks ['go-gin'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+11:45:05 go-gin · test 2
+11:45:06   go-gin healthy after 0.02 s
+11:45:16   smoke ok, p50 0.41 ms
+11:47:43   probe: E = 32000 req/s (8 stages)
+11:48:50   step     25600 req/s → pass p95   10.93 p99   24.50 err 0.00% dropped 0 
+11:49:56   step     29440 req/s → pass p95   20.46 p99   39.71 err 0.00% dropped 0 
+11:51:03   step     33856 req/s → pass p95   36.93 p99   62.81 err 0.00% dropped 0 
+11:52:09   step     38934 req/s → fail p95  110.08 p99  219.34 err 0.00% dropped 0 slo
+11:53:16   step     36395 req/s → pass p95   56.69 p99   96.01 err 0.00% dropped 0 
+11:54:22   step     37664 req/s → pass p95   81.56 p99  173.33 err 0.00% dropped 0 
+11:55:29   step     37664 req/s → pass p95   83.74 p99  174.54 err 0.00% dropped 0 
+11:55:46   → ok, max_rps 37664
+11:55:46 go-gin · test 3
+11:55:47   go-gin healthy after 0.0 s
+11:55:57   smoke ok, p50 0.88 ms
+11:58:02   probe: E = 8000 req/s (6 stages)
+11:59:09   step      6400 req/s → pass p95    4.48 p99    8.73 err 0.00% dropped 0 
+12:00:16   step      7360 req/s → pass p95    7.44 p99   18.46 err 0.00% dropped 0 
+12:01:22   step      8464 req/s → fail p95  787.67 p99 1212.17 err 0.00% dropped 1151 slo
+12:02:28   step      7912 req/s → pass p95   29.13 p99  112.22 err 0.00% dropped 0 
+12:03:34   step      8188 req/s → pass p95   75.37 p99  230.11 err 0.00% dropped 0 
+12:04:41   step      8188 req/s → pass p95   85.37 p99  217.86 err 0.00% dropped 0 
+12:04:57   → ok, max_rps 8188
+12:04:57 go-gin · test 4
+12:04:58   go-gin healthy after 0.0 s
+12:05:09   smoke ok, p50 1.01 ms
+12:06:44 SPOT INTERRUPTION: loadgen: spot notice {"action":"stop","time":"2026-11-10T12:08:37Z"}
+12:06:44 PAUSED (paused_spot): loadgen: spot notice {"action":"stop","time":"2026-11-10T12:08:37Z"} during go-gin test 4
+12:06:44 results so far are saved. When the hosts run again: terraform apply -refresh-only, deploy.sh, then python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+12:43:14 resuming after pause (loadgen: spot notice {"action":"stop","time":"2026-11-10T12:08:37Z"}); only go-gin test 4 is rerun
+12:43:19 session 7 (run): go-gin
+12:43:19 campaign 2026-10-17T1643Z-e1e3943: stacks ['go-gin'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+12:43:19 go-gin · test 4
+12:43:19   unfinished earlier attempt moved to go-gin/4/discarded/20261110T124319Z
+12:43:20   go-gin healthy after 0.02 s
+12:43:30   smoke ok, p50 0.99 ms
+12:45:35   probe: E = 8000 req/s (6 stages)
+12:46:41   step      6400 req/s → pass p95    2.89 p99    5.36 err 0.00% dropped 0 
+12:47:47   step      7360 req/s → pass p95    4.12 p99    7.67 err 0.00% dropped 0 
+12:48:53   step      8464 req/s → pass p95    6.65 p99   13.33 err 0.00% dropped 0 
+12:49:59   step      9734 req/s → pass p95   28.76 p99  108.49 err 0.00% dropped 0 
+12:51:06   step     11194 req/s → fail p95 1241.34 p99 1740.28 err 0.00% dropped 29696 (+6941 at start) slo
+12:52:12   step     10464 req/s → fail p95  698.15 p99  993.75 err 0.00% dropped 2744 slo
+12:53:18   step     10099 req/s → fail p95  166.37 p99  322.90 err 0.00% dropped 0 slo
+12:54:24   step      9734 req/s → pass p95   41.17 p99  138.72 err 0.00% dropped 0 
+12:54:41   → ok, max_rps 9734
+12:54:41 go-gin · test 5
+12:54:41   recreate bench from bench_template
+12:54:46   go-gin healthy after 0.0 s
+12:54:56   smoke ok, p50 1.73 ms
+12:56:50   probe: E = 4000 req/s (5 stages)
+12:57:57   step      3200 req/s → pass p95    3.07 p99    3.84 err 0.00% dropped 0 
+12:59:04   step      3680 req/s → pass p95    3.17 p99    4.04 err 0.00% dropped 0 
+13:00:10   step      4232 req/s → pass p95    3.33 p99    4.32 err 0.00% dropped 0 
+13:01:17   step      4867 req/s → pass p95    3.99 p99    5.24 err 0.00% dropped 0 
+13:02:23   step      5597 req/s → pass p95    4.47 p99    7.30 err 0.00% dropped 0 db_bound
+13:03:30   step      6437 req/s → pass p95    5.53 p99   10.15 err 0.00% dropped 0 db_bound
+13:04:38   step      7403 req/s → pass p95   15.01 p99   38.97 err 0.00% dropped 0 db_bound
+13:05:47   step      8513 req/s → fail p95  951.51 p99 1482.85 err 0.00% dropped 2482 (+171 at start) slo db_bound
+13:06:55   step      7958 req/s → pass p95   49.77 p99  115.33 err 0.00% dropped 0 db_bound
+13:08:02   step      8236 req/s → fail p95  165.25 p99  287.14 err 0.00% dropped 0 slo db_bound
+13:09:10   step      7958 req/s → fail p95  167.30 p99  306.18 err 0.00% dropped 0 slo db_bound
+13:10:19   step      7560 req/s → pass p95   15.60 p99   34.22 err 0.00% dropped 0 db_bound
+13:10:38   → ok, max_rps 7560
+13:10:38 go-gin · test 6
+13:10:39   go-gin healthy after 0.5 s
+13:10:50   smoke ok, p50 51.26 ms
+13:13:17   probe: E = 32000 req/s (8 stages)
+13:14:23   step     25600 req/s → pass p95   67.21 p99   75.63 err 0.00% dropped 0 
+13:15:30   step     29440 req/s → pass p95   74.39 p99   88.03 err 0.00% dropped 0 (+1638 at start) 
+13:16:36   step     33856 req/s → pass p95   94.71 p99  138.71 err 0.00% dropped 0 (+4503 at start) 
+13:17:43   step     38934 req/s → fail p95  735.72 p99  803.33 err 0.00% dropped 264290 (+80934 at start) slo
+13:18:50   step     36395 req/s → fail p95  716.48 p99  797.25 err 0.00% dropped 185127 (+49908 at start) slo
+13:19:57   step     35126 req/s → fail p95  679.69 p99  752.28 err 0.00% dropped 117267 (+27966 at start) slo
+13:21:03   step     33856 req/s → pass p95   89.73 p99   99.42 err 0.00% dropped 0 (+4601 at start) 
+13:21:20   → ok, max_rps 33856
+13:21:20 go-gin · test 7
+13:21:21   go-gin healthy after 0.0 s
+13:21:31   smoke ok, p50 0.33 ms
+13:23:47   probe: E = 16000 req/s (7 stages)
+13:24:53   step     12800 req/s → pass p95    0.40 p99    1.60 err 0.00% dropped 0 
+13:25:59   step     14720 req/s → pass p95    0.45 p99    1.73 err 0.00% dropped 0 
+13:27:05   step     16928 req/s → pass p95    0.71 p99    2.71 err 0.00% dropped 0 
+13:28:12   step     19467 req/s → pass p95    1.71 p99    4.41 err 0.00% dropped 0 
+13:29:18   step     22387 req/s → pass p95    4.55 p99    9.25 err 0.00% dropped 0 
+13:30:24   step     25745 req/s → pass p95   10.37 p99   18.71 err 0.00% dropped 0 
+13:31:31   step     29607 req/s → fail p95  300.36 p99  335.62 err 0.00% dropped 3826 (+1003 at start) slo
+13:32:37   step     27676 req/s → pass p95   20.95 p99   51.38 err 0.00% dropped 0 
+13:33:44   step     28642 req/s → pass p95   60.95 p99   80.08 err 0.00% dropped 0 
+13:34:50   step     28642 req/s → pass p95   52.93 p99   71.63 err 0.00% dropped 0 
+13:35:07   → ok, max_rps 28642
+13:35:07 go-gin · test 8
+13:35:08   go-gin healthy after 0.0 s
+13:35:18   smoke ok, p50 0.41 ms
+13:37:55   probe: E = 12800 req/s (9 stages)
+13:39:01   step     10240 req/s → pass p95    0.43 p99    0.98 err 0.00% dropped 0 
+13:40:07   step     11776 req/s → pass p95    0.56 p99    1.74 err 0.00% dropped 0 
+13:41:13   step     13542 req/s → pass p95    0.98 p99    3.52 err 0.00% dropped 0 
+13:42:19   step     15573 req/s → pass p95    2.74 p99    7.00 err 0.00% dropped 0 
+13:43:25   step     17909 req/s → pass p95   34.20 p99   48.03 err 0.00% dropped 0 
+13:44:32   step     20595 req/s → fail p95  596.16 p99  618.01 err 0.00% dropped 68474 (+14800 at start) slo
+13:45:39   step     19252 req/s → fail p95  550.51 p99  575.80 err 0.00% dropped 21457 (+3644 at start) slo
+13:46:45   step     18580 req/s → fail p95  295.47 p99  314.96 err 0.00% dropped 1680 (+58 at start) slo
+13:47:51   step     17909 req/s → pass p95   40.65 p99   53.32 err 0.00% dropped 0 
+13:48:08   → ok, max_rps 17909
+13:48:08 go-gin · test 9
+13:48:08   recreate bench from bench_template
+13:48:17   go-gin healthy after 0.5 s
+13:48:27   smoke ok, p50 0.58 ms
+13:50:33   probe: E = 8000 req/s (6 stages)
+13:51:39   step      6400 req/s → pass p95   51.00 p99   51.36 err 0.00% dropped 0 
+13:52:46   step      7360 req/s → pass p95   50.95 p99   51.35 err 0.00% dropped 0 
+13:53:52   step      8464 req/s → pass p95   50.95 p99   51.38 err 0.00% dropped 0 
+13:54:59   step      9734 req/s → pass p95   50.97 p99   51.46 err 0.00% dropped 0 
+13:56:06   step     11194 req/s → pass p95   51.08 p99   51.83 err 0.00% dropped 0 
+13:57:12   step     12873 req/s → pass p95   51.32 p99   52.77 err 0.00% dropped 0 
+13:58:19   step     14804 req/s → pass p95   52.38 p99   55.43 err 0.00% dropped 0 
+13:59:27   step     17025 req/s → fail p95 1923.07 p99 3045.98 err 0.05% dropped 15512 (+2840 at start) slo
+14:00:35   step     15914 req/s → fail p95 1689.38 p99 2669.74 err 0.02% dropped 7587 (+957 at start) slo
+14:01:43   step     15359 req/s → fail p95 1189.99 p99 1884.00 err 0.00% dropped 2815 slo
+14:02:50   step     14804 req/s → pass p95   52.71 p99   55.86 err 0.00% dropped 0 
+14:03:07   → ok, max_rps 14812.2
+14:03:07 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (40 rows) and scores.txt
+14:03:07 still without a test 9 result: rust-axum, dotnet-aspnetcore

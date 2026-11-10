@@ -1,0 +1,322 @@
+{
+ "root_group": {
+  "name": "",
+  "path": "",
+  "id": "d41d8cd98f00b204e9800998ecf8427e",
+  "groups": [],
+  "checks": []
+ },
+ "options": {
+  "summaryTrendStats": [
+   "avg",
+   "min",
+   "med",
+   "max",
+   "p(50)",
+   "p(90)",
+   "p(95)",
+   "p(99)"
+  ],
+  "summaryTimeUnit": "ms",
+  "noColor": true
+ },
+ "state": {
+  "isStdOutTTY": false,
+  "isStdErrTTY": false,
+  "testRunDurationMs": 10654.585306
+ },
+ "metrics": {
+  "http_req_failed": {
+   "values": {
+    "fails": 38697,
+    "rate": 0,
+    "passes": 0
+   },
+   "type": "rate",
+   "contains": "default"
+  },
+  "http_reqs{phase:settle_tail}": {
+   "contains": "default",
+   "values": {
+    "count": 0,
+    "rate": 0
+   },
+   "thresholds": {
+    "count>=0": {
+     "ok": true
+    }
+   },
+   "type": "counter"
+  },
+  "http_req_duration{phase:measure}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(50)": 687.641663,
+    "p(90)": 698.7447937,
+    "p(95)": 702.44069685,
+    "p(99)": 710.8711737,
+    "avg": 676.7711080588489,
+    "min": 0.228962,
+    "med": 687.641663,
+    "max": 745.31132
+   },
+   "thresholds": {
+    "p(95)<100": {
+     "ok": false
+    },
+    "p(99)<250": {
+     "ok": false
+    }
+   }
+  },
+  "http_req_blocked": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 0.00061,
+    "med": 0.00214,
+    "max": 15.443865,
+    "p(50)": 0.00214,
+    "p(90)": 0.0064404000000000015,
+    "p(95)": 0.17061299999999982,
+    "p(99)": 0.3317296000000021,
+    "avg": 0.033222695816215765
+   }
+  },
+  "http_req_duration{expected_response:true}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 685.227873,
+    "max": 930.373147,
+    "p(50)": 685.227873,
+    "p(90)": 704.5794374000001,
+    "p(95)": 742.4778829999999,
+    "p(99)": 789.76121744,
+    "avg": 608.8349259044139,
+    "min": 0.228962
+   }
+  },
+  "http_req_failed{phase:measure}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 18794
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_connecting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 0,
+    "max": 15.423855,
+    "p(50)": 0,
+    "p(90)": 0,
+    "p(95)": 0.13991299999999998,
+    "p(99)": 0.23674784000000038,
+    "avg": 0.0252344637051968,
+    "min": 0
+   }
+  },
+  "http_req_waiting": {
+   "contains": "time",
+   "values": {
+    "med": 685.196112,
+    "max": 930.348587,
+    "p(50)": 685.196112,
+    "p(90)": 704.5544074000001,
+    "p(95)": 742.4368422,
+    "p(99)": 789.73478184,
+    "avg": 608.8015622646988,
+    "min": 0.201762
+   },
+   "type": "trend"
+  },
+  "http_req_tls_handshaking": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 0,
+    "med": 0,
+    "max": 0,
+    "p(50)": 0,
+    "p(90)": 0,
+    "p(95)": 0,
+    "p(99)": 0,
+    "avg": 0
+   }
+  },
+  "http_req_receiving": {
+   "values": {
+    "max": 4.111778,
+    "p(50)": 0.018031,
+    "p(90)": 0.029241,
+    "p(95)": 0.035011999999999974,
+    "p(99)": 0.055811760000000016,
+    "avg": 0.0207349298136807,
+    "min": 0.0064,
+    "med": 0.018031
+   },
+   "type": "trend",
+   "contains": "time"
+  },
+  "http_req_sending": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 0.00679,
+    "max": 5.9404,
+    "p(50)": 0.00679,
+    "p(90)": 0.021184000000000015,
+    "p(95)": 0.03001,
+    "p(99)": 0.07316524000000012,
+    "avg": 0.01262870989999237,
+    "min": 0.00285
+   }
+  },
+  "dropped_iterations": {
+   "contains": "default",
+   "values": {
+    "count": 12504,
+    "rate": 1173.5792281806148
+   },
+   "thresholds": {
+    "count>=0": {
+     "ok": true
+    }
+   },
+   "type": "counter"
+  },
+  "iteration_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(90)": 704.652898,
+    "p(95)": 742.5795511999997,
+    "p(99)": 789.8346184000001,
+    "avg": 608.941447946126,
+    "min": 0.287522,
+    "med": 685.295003,
+    "max": 930.424797,
+    "p(50)": 685.295003
+   }
+  },
+  "vus": {
+   "values": {
+    "value": 251,
+    "min": 251,
+    "max": 2560
+   },
+   "type": "gauge",
+   "contains": "default"
+  },
+  "vus_max": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "value": 2560,
+    "min": 1282,
+    "max": 2560
+   }
+  },
+  "iterations": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "rate": 3631.9574050628003,
+    "count": 38697
+   }
+  },
+  "data_sent": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 4062856,
+    "rate": 381324.6488075
+   }
+  },
+  "http_req_duration{phase:settle_tail}": {
+   "thresholds": {
+    "p(99)>=0": {
+     "ok": true
+    }
+   },
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "avg": 0,
+    "min": 0,
+    "med": 0,
+    "max": 0,
+    "p(50)": 0,
+    "p(90)": 0,
+    "p(95)": 0,
+    "p(99)": 0
+   }
+  },
+  "http_reqs": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "count": 38697,
+    "rate": 3631.9574050628003
+   }
+  },
+  "http_req_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 0.228962,
+    "med": 685.227873,
+    "max": 930.373147,
+    "p(50)": 685.227873,
+    "p(90)": 704.5794374000001,
+    "p(95)": 742.4778829999999,
+    "p(99)": 789.76121744,
+    "avg": 608.8349259044139
+   }
+  },
+  "http_reqs{phase:measure}": {
+   "thresholds": {
+    "count>=0": {
+     "ok": true
+    }
+   },
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "rate": 1763.9353818319319,
+    "count": 18794
+   }
+  },
+  "iterations{phase:measure}": {
+   "contains": "default",
+   "values": {
+    "count": 18794,
+    "rate": 1763.9353818319319
+   },
+   "thresholds": {
+    "count>=0": {
+     "ok": true
+    }
+   },
+   "type": "counter"
+  },
+  "data_received": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 55094281,
+    "rate": 5170945.59925991
+   }
+  }
+ }
+}
