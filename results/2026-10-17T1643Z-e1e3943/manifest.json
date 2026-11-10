@@ -11,7 +11,8 @@
     "python-fastapi",
     "php-laravel",
     "java-spring",
-    "go-gin"
+    "go-gin",
+    "dotnet-aspnetcore"
   ],
   "tests": [
     2,
@@ -533,7 +534,8 @@
       "kind": "run",
       "started": "2026-11-10T12:43:19.016185+00:00",
       "stacks": [
-        "go-gin"
+        "go-gin",
+        "dotnet-aspnetcore"
       ],
       "hosts": {
         "app": {
@@ -571,6 +573,50 @@
         }
       },
       "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"796913ba22dcc4de40b658745ce1835fde297831\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"go-gin\": {\n      \"build_s\": 43,\n      \"built_at\": \"2026-11-10T11:44:48+00:00\",\n      \"compose\": \"stacks/go-gin/compose.yml\",\n      \"created\": \"2026-11-10T11:44:46.245907716Z\",\n      \"images\": {\n        \"bench-go-gin:local\": \"sha256:5889759725e856ffc0c4545d2a6c2845f53e2f894f35e7dad1a9669f5d92d3d0\"\n      }\n    },\n    \"java-spring\": {\n      \"build_s\": 23,\n      \"built_at\": \"2026-11-10T09:59:18+00:00\",\n      \"compose\": \"stacks/java-spring/compose.yml\",\n      \"created\": \"2026-11-10T09:59:15.732047425Z\",\n      \"images\": {\n        \"bench-java-spring:local\": \"sha256:9cf8be862f6e627a16afd6d9e59bcea87bb3cdd3546083eda21fa712c9a8eed0\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T11:44:48+00:00\"\n}"
+    },
+    {
+      "n": 8,
+      "kind": "run",
+      "started": "2026-11-10T16:13:20.638889+00:00",
+      "stacks": [
+        "dotnet-aspnetcore"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0f8db52952931b9da",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "0a3c4948-3306-45a2-8ddc-6b89824f527c"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-02552864e45a854fd",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "d2b8bf77-5970-46a7-88b8-29f70c20aadb"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-09917581b5bafab24",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "78319ddb-a6eb-4770-bf02-629e4a251314"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"d1d247772baa8a529a6c800992678a5a0aa1e777\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"dotnet-aspnetcore\": {\n      \"build_s\": 20,\n      \"built_at\": \"2026-11-10T14:08:30+00:00\",\n      \"compose\": \"stacks/dotnet-aspnetcore/compose.yml\",\n      \"created\": \"2026-11-10T14:08:28.327582509Z\",\n      \"images\": {\n        \"bench-dotnet-aspnetcore:local\": \"sha256:44e3cfc72e849f2dff0ed33c7cd591390b818cafaef527a24094be8fb1136e61\"\n      }\n    },\n    \"go-gin\": {\n      \"build_s\": 43,\n      \"built_at\": \"2026-11-10T11:44:48+00:00\",\n      \"compose\": \"stacks/go-gin/compose.yml\",\n      \"created\": \"2026-11-10T11:44:46.245907716Z\",\n      \"images\": {\n        \"bench-go-gin:local\": \"sha256:5889759725e856ffc0c4545d2a6c2845f53e2f894f35e7dad1a9669f5d92d3d0\"\n      }\n    },\n    \"java-spring\": {\n      \"build_s\": 23,\n      \"built_at\": \"2026-11-10T09:59:18+00:00\",\n      \"compose\": \"stacks/java-spring/compose.yml\",\n      \"created\": \"2026-11-10T09:59:15.732047425Z\",\n      \"images\": {\n        \"bench-java-spring:local\": \"sha256:9cf8be862f6e627a16afd6d9e59bcea87bb3cdd3546083eda21fa712c9a8eed0\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T14:08:30+00:00\"\n}"
     }
   ],
   "pauses": [
@@ -603,6 +649,16 @@
         "test": 4
       },
       "resumed": "2026-11-10T12:43:14.886428+00:00"
+    },
+    {
+      "paused": {
+        "time": "2026-11-10T16:07:09.550503+00:00",
+        "host": "loadgen",
+        "reason": "spot notice {\"action\":\"stop\",\"time\":\"2026-11-10T16:09:00Z\"}",
+        "stack": "dotnet-aspnetcore",
+        "test": 9
+      },
+      "resumed": "2026-11-10T16:13:16.502948+00:00"
     }
   ]
 }

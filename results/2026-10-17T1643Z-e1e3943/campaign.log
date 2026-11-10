@@ -642,3 +642,159 @@
 14:03:07   → ok, max_rps 14812.2
 14:03:07 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (40 rows) and scores.txt
 14:03:07 still without a test 9 result: rust-axum, dotnet-aspnetcore
+14:08:47 estimated duration: 1.3 h
+14:08:47 campaign 2026-10-17T1643Z-e1e3943: stacks ['dotnet-aspnetcore'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+14:08:47 dotnet-aspnetcore · test 2
+14:08:50   dotnet-aspnetcore healthy after 1.09 s
+14:09:00   smoke ok, p50 0.89 ms
+14:11:04   probe: E = 8000 req/s (6 stages)
+14:12:11   step      6400 req/s → pass p95    1.09 p99    2.08 err 0.00% dropped 0 
+14:13:17   step      7360 req/s → pass p95    1.19 p99    2.44 err 0.00% dropped 0 
+14:14:23   step      8464 req/s → pass p95    1.44 p99    2.85 err 0.00% dropped 0 
+14:15:29   step      9734 req/s → pass p95    2.12 p99    3.94 err 0.00% dropped 0 
+14:16:35   step     11194 req/s → pass p95    2.84 p99    8.08 err 0.00% dropped 0 
+14:17:42   step     12873 req/s → pass p95    4.75 p99   41.59 err 0.00% dropped 0 
+14:18:48   step     14804 req/s → fail p95  673.59 p99  740.14 err 0.00% dropped 79061 (+21686 at start) slo
+14:19:54   step     13838 req/s → fail p95  611.46 p99  654.52 err 0.00% dropped 44125 (+10029 at start) slo
+14:21:00   step     13356 req/s → fail p95  296.34 p99  363.59 err 0.00% dropped 4748 (+1149 at start) slo
+14:22:06   step     12873 req/s → pass p95    8.08 p99  120.20 err 0.00% dropped 0 
+14:22:23   → ok, max_rps 12873
+14:22:23 dotnet-aspnetcore · test 3
+14:22:25   dotnet-aspnetcore healthy after 1.07 s
+14:22:36   smoke ok, p50 1.29 ms
+14:24:40   probe: E = 8000 req/s (6 stages)
+14:25:46   step      6400 req/s → pass p95    1.52 p99    3.14 err 0.00% dropped 0 
+14:26:52   step      7360 req/s → pass p95    2.04 p99    5.13 err 0.00% dropped 0 
+14:27:58   step      8464 req/s → pass p95    2.95 p99    9.33 err 0.00% dropped 0 
+14:29:05   step      9734 req/s → fail p95  601.51 p99  634.51 err 0.00% dropped 29086 (+8334 at start) slo
+14:30:11   step      9099 req/s → pass p95    4.39 p99   43.71 err 0.00% dropped 0 
+14:31:17   step      9416 req/s → pass p95    4.06 p99   19.13 err 0.00% dropped 0 
+14:32:23   step      9416 req/s → pass p95    4.70 p99   17.13 err 0.00% dropped 0 
+14:32:39   → ok, max_rps 9416
+14:32:39 dotnet-aspnetcore · test 4
+14:32:41   dotnet-aspnetcore healthy after 1.09 s
+14:32:52   smoke ok, p50 1.69 ms
+14:34:46   probe: E = 4000 req/s (5 stages)
+14:35:52   step      3200 req/s → pass p95    1.65 p99    2.15 err 0.00% dropped 0 
+14:36:57   step      3680 req/s → pass p95    1.85 p99    2.52 err 0.00% dropped 0 
+14:38:04 INVALID: dotnet-aspnetcore test 4: dropped_iterations=54 at a passing rate
+14:38:04 fix the cause, then: python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+14:41:27 campaign 2026-10-17T1643Z-e1e3943: stacks ['dotnet-aspnetcore'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+14:41:27 dotnet-aspnetcore · test 4
+14:41:27   unfinished earlier attempt moved to dotnet-aspnetcore/4/discarded/20261110T144127Z
+14:41:29   dotnet-aspnetcore healthy after 1.1 s
+14:41:40   smoke ok, p50 1.72 ms
+14:43:33   probe: E = 4000 req/s (5 stages)
+14:44:40   step      3200 req/s → pass p95    1.65 p99    2.14 err 0.00% dropped 0 
+14:45:45   step      3680 req/s → pass p95    1.82 p99    2.35 err 0.00% dropped 0 
+14:46:52 INVALID: dotnet-aspnetcore test 4: dropped_iterations=54 at a passing rate
+14:46:52 fix the cause, then: python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+14:52:37 campaign 2026-10-17T1643Z-e1e3943: stacks ['dotnet-aspnetcore'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+14:52:37 dotnet-aspnetcore · test 4
+14:52:37   unfinished earlier attempt moved to dotnet-aspnetcore/4/discarded/20261110T145237Z
+14:52:39   dotnet-aspnetcore healthy after 1.1 s
+14:52:50   smoke ok, p50 1.75 ms
+14:54:44   probe: E = 4000 req/s (5 stages)
+14:55:50   step      3200 req/s → pass p95    1.69 p99    2.40 err 0.00% dropped 0 
+14:56:56   step      3680 req/s → pass p95    1.95 p99    2.99 err 0.00% dropped 0 
+14:58:02   step      4232 req/s → pass p95    2.87 p99  177.01 err 0.00% dropped 0 
+14:59:08   step      4867 req/s → pass p95    2.62 p99    4.42 err 0.00% dropped 0 
+15:00:14   step      5597 req/s → pass p95    3.20 p99    6.38 err 0.00% dropped 0 db_bound
+15:01:20   step      6437 req/s → pass p95    6.00 p99   15.83 err 0.00% dropped 0 db_bound
+15:02:28   step      7403 req/s → fail p95 1327.93 p99 1363.68 err 0.00% dropped 47252 (+10280 at start) slo db_bound
+15:03:35   step      6920 req/s → fail p95 1238.94 p99 1292.07 err 0.00% dropped 32237 (+7749 at start) slo db_bound
+15:04:41   step      6678 req/s → pass p95    7.88 p99   18.48 err 0.00% dropped 0 db_bound
+15:05:47   step      6678 req/s → pass p95   14.12 p99   30.54 err 0.00% dropped 0 db_bound
+15:06:04   → ok, max_rps 6678
+15:06:04 dotnet-aspnetcore · test 5
+15:06:04   recreate bench from bench_template
+15:06:10   dotnet-aspnetcore healthy after 1.08 s
+15:06:21   smoke ok, p50 4.05 ms
+15:08:05   probe: E = 2000 req/s (4 stages)
+15:09:11   step      1600 req/s → pass p95    5.51 p99    6.95 err 0.00% dropped 0 
+15:10:18   step      1840 req/s → pass p95    5.86 p99    7.85 err 0.00% dropped 0 
+15:11:24   step      2116 req/s → pass p95    7.50 p99  101.61 err 0.00% dropped 0 db_bound
+15:12:30   step      2433 req/s → pass p95    8.78 p99   14.14 err 0.00% dropped 0 db_bound
+15:13:37   step      2798 req/s → pass p95   13.69 p99   22.25 err 0.00% dropped 0 db_bound
+15:14:43   step      3218 req/s → pass p95   94.16 p99  107.85 err 0.00% dropped 0 db_bound
+15:15:51   step      3701 req/s → fail p95 1313.67 p99 1340.05 err 0.00% dropped 20622 (+3740 at start) slo db_bound
+15:16:59   step      3460 req/s → fail p95 1209.48 p99 1253.48 err 0.00% dropped 12242 (+725 at start) slo db_bound
+15:18:06   step      3339 req/s → pass p95   61.36 p99   80.37 err 0.00% dropped 0 db_bound
+15:19:12   step      3339 req/s → pass p95   98.52 p99  116.04 err 0.00% dropped 0 db_bound
+15:19:30   → ok, max_rps 3339
+15:19:30 dotnet-aspnetcore · test 6
+15:19:32   dotnet-aspnetcore healthy after 1.08 s
+15:19:42   smoke ok, p50 51.29 ms
+15:22:11   probe: E = 32000 req/s (8 stages)
+15:23:18   step     25600 req/s → pass p95   62.95 p99   77.49 err 0.00% dropped 0 
+15:24:24   step     29440 req/s → pass p95   64.81 p99   77.47 err 0.00% dropped 0 
+15:25:31   step     33856 req/s → pass p95   80.34 p99   89.88 err 0.00% dropped 0 
+15:26:38   step     38934 req/s → pass p95   97.84 p99  110.78 err 0.00% dropped 0 (+4032 at start) 
+15:27:47   step     44774 req/s → fail p95 1228.28 p99 1422.83 err 0.00% dropped 197065 (+57809 at start) slo
+15:28:55   step     41854 req/s → fail p95 1058.00 p99 1109.74 err 0.00% dropped 75521 (+159359 at start) slo
+15:30:02   step     40394 req/s → fail p95  144.72 p99  225.45 err 0.00% dropped 0 (+22 at start) slo
+15:31:09   step     38934 req/s → pass p95   95.83 p99  107.12 err 0.00% dropped 0 
+15:31:25   → ok, max_rps 38934
+15:31:25 dotnet-aspnetcore · test 7
+15:31:27   dotnet-aspnetcore healthy after 1.08 s
+15:31:38   smoke ok, p50 0.51 ms
+15:33:43   probe: E = 8000 req/s (6 stages)
+15:34:49   step      6400 req/s → pass p95    1.53 p99    3.21 err 0.00% dropped 0 
+15:35:55   step      7360 req/s → pass p95    1.62 p99    3.44 err 0.00% dropped 0 
+15:37:01   step      8464 req/s → pass p95    2.39 p99   19.83 err 0.00% dropped 0 
+15:38:07   step      9734 req/s → pass p95    2.92 p99   34.51 err 0.00% dropped 0 
+15:39:13   step     11194 req/s → pass p95    5.67 p99   49.62 err 0.00% dropped 0 
+15:40:20   step     12873 req/s → fail p95  177.51 p99  294.88 err 0.00% dropped 0 slo
+15:41:26   step     12034 req/s → pass p95   68.44 p99  234.96 err 0.00% dropped 0 
+15:42:33   step     12454 req/s → pass p95   54.41 p99  233.11 err 0.00% dropped 0 
+15:43:39   step     12454 req/s → pass p95   70.68 p99  235.08 err 0.00% dropped 0 
+15:43:56   → ok, max_rps 12454
+15:43:56 dotnet-aspnetcore · test 8
+15:43:58   dotnet-aspnetcore healthy after 1.08 s
+15:44:09   smoke ok, p50 0.40 ms
+15:46:46   probe: E = 12800 req/s (9 stages)
+15:47:52   step     10240 req/s → pass p95    0.81 p99    2.88 err 0.00% dropped 0 
+15:48:58   step     11776 req/s → pass p95    0.88 p99    3.27 err 0.00% dropped 0 
+15:50:05   step     13542 req/s → pass p95    1.12 p99    5.54 err 0.00% dropped 0 
+15:51:11   step     15573 req/s → pass p95    1.75 p99    6.08 err 0.00% dropped 0 
+15:52:17   step     17909 req/s → pass p95    3.01 p99    7.07 err 0.00% dropped 0 
+15:53:24   step     20595 req/s → pass p95    5.22 p99    9.76 err 0.00% dropped 0 
+15:54:30   step     23684 req/s → pass p95   16.43 p99   46.98 err 0.00% dropped 0 
+15:55:38   step     27237 req/s → fail p95 1001.88 p99 1033.25 err 0.00% dropped 56897 (+17431 at start) slo
+15:56:45   step     25460 req/s → fail p95  512.32 p99  546.19 err 0.00% dropped 5550 (+397 at start) slo
+15:57:52   step     24572 req/s → pass p95   15.13 p99   25.70 err 0.00% dropped 0 
+15:58:59   step     24572 req/s → pass p95   32.63 p99   68.37 err 0.00% dropped 0 
+15:59:15   → ok, max_rps 24572
+15:59:15 dotnet-aspnetcore · test 9
+15:59:15   recreate bench from bench_template
+15:59:22   dotnet-aspnetcore healthy after 1.09 s
+15:59:32   smoke ok, p50 1.32 ms
+16:01:42   probe: E = 8000 req/s (6 stages)
+16:02:50   step      6400 req/s → pass p95   51.08 p99   51.56 err 0.00% dropped 0 
+16:03:57   step      7360 req/s → pass p95   51.09 p99   51.62 err 0.00% dropped 0 
+16:05:03   step      8464 req/s → pass p95   51.16 p99   51.91 err 0.00% dropped 0 
+16:06:10   step      9734 req/s → pass p95   51.36 p99   52.72 err 0.00% dropped 0 
+16:07:08 SPOT INTERRUPTION: loadgen: spot notice {"action":"stop","time":"2026-11-10T16:09:00Z"}
+16:07:09 PAUSED (paused_spot): loadgen: spot notice {"action":"stop","time":"2026-11-10T16:09:00Z"} during dotnet-aspnetcore test 9
+16:07:09 results so far are saved. When the hosts run again: terraform apply -refresh-only, deploy.sh, then python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+16:13:16 resuming after pause (loadgen: spot notice {"action":"stop","time":"2026-11-10T16:09:00Z"}); only dotnet-aspnetcore test 9 is rerun
+16:13:20 session 8 (run): dotnet-aspnetcore
+16:13:20 campaign 2026-10-17T1643Z-e1e3943: stacks ['dotnet-aspnetcore'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+16:13:20 dotnet-aspnetcore · test 9
+16:13:20   unfinished earlier attempt moved to dotnet-aspnetcore/9/discarded/20261110T161320Z
+16:13:20   recreate bench from bench_template
+16:13:27   dotnet-aspnetcore healthy after 1.1 s
+16:13:37   smoke ok, p50 1.29 ms
+16:15:47   probe: E = 8000 req/s (6 stages)
+16:16:55   step      6400 req/s → pass p95   51.08 p99   51.60 err 0.00% dropped 0 
+16:18:02   step      7360 req/s → pass p95   51.10 p99   51.69 err 0.00% dropped 0 
+16:19:08   step      8464 req/s → pass p95   51.14 p99   51.84 err 0.00% dropped 0 
+16:20:15   step      9734 req/s → pass p95   51.32 p99   52.48 err 0.00% dropped 0 
+16:21:26   step     11194 req/s → fail p95 1854.82 p99 1952.99 err 0.00% dropped 17977 (+3232 at start) slo
+16:22:32   step     10464 req/s → pass p95   51.83 p99   54.21 err 0.00% dropped 0 
+16:23:39   step     10829 req/s → pass p95   52.09 p99   57.69 err 0.00% dropped 0 db_bound
+16:24:50   step     10829 req/s → fail p95 1724.72 p99 1909.04 err 0.00% dropped 13513 (+1621 at start) slo
+16:25:57   step     10288 req/s → pass p95   51.56 p99   53.44 err 0.00% dropped 0 
+16:26:14   → ok, max_rps 10287.77
+16:26:14 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (48 rows) and scores.txt
+16:26:14 still without a test 9 result: rust-axum
