@@ -8,7 +8,8 @@
   "shuffle_seed": 206980261,
   "stacks": [
     "node-nestjs",
-    "python-fastapi"
+    "python-fastapi",
+    "php-laravel"
   ],
   "tests": [
     2,
@@ -391,6 +392,94 @@
         }
       },
       "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"384ee0c53e0663e059aaa2369c51b3b1483e7a57\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"python-fastapi\": {\n      \"build_s\": 13,\n      \"built_at\": \"2026-11-10T05:49:43+00:00\",\n      \"compose\": \"stacks/python-fastapi/compose.yml\",\n      \"created\": \"2026-11-10T05:49:38.289302721Z\",\n      \"images\": {\n        \"bench-python-fastapi:local\": \"sha256:55e4e79b986a9fb48a21e831dece1778b216c7ec495e92e7d5328bd807436b57\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T05:49:43+00:00\"\n}"
+    },
+    {
+      "n": 4,
+      "kind": "run",
+      "started": "2026-11-10T08:02:33.498892+00:00",
+      "stacks": [
+        "php-laravel"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0cac29a68b181fd90",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "23a70fc0-df01-4f97-89a6-e5be3fae8681"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-07fb81078f5889314",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "ed8277dd-945b-4429-9146-85ce715a31d6"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-03f76bf469a1e9f76",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "504a436f-757a-48e5-8977-96d978d54a1b"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"06fa0f4357f0f22ec6fe3d36828593e2d6fb7e84\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"php-laravel\": {\n      \"build_s\": 25,\n      \"built_at\": \"2026-11-10T07:56:21+00:00\",\n      \"compose\": \"stacks/php-laravel/compose.yml\",\n      \"created\": \"2026-11-10T07:56:17.067179984Z\",\n      \"images\": {\n        \"bench-php-laravel:local\": \"sha256:87a51a7a1a3af2ee54c187a68be892168acb86fe0572d41f4fcb554681f15b33\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T07:56:21+00:00\"\n}"
+    },
+    {
+      "n": 5,
+      "kind": "run",
+      "started": "2026-11-10T09:17:05.237606+00:00",
+      "stacks": [
+        "php-laravel"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-0a128824141e82699",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "33f109dc-7f91-4bdf-b682-d0f8a3270b94"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-012c233934cd7d228",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "7cbd9ae5-2123-475a-bdab-737f26ee5368"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-03604f53a92c3c3af",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "1facf43b-cbe3-490c-9154-6e1f14e83a17"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"892ce65165f598777c66d0b89eaae1831d63b774\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"php-laravel\": {\n      \"build_s\": 35,\n      \"built_at\": \"2026-11-10T09:16:31+00:00\",\n      \"compose\": \"stacks/php-laravel/compose.yml\",\n      \"created\": \"2026-11-10T09:16:27.264374439Z\",\n      \"images\": {\n        \"bench-php-laravel:local\": \"sha256:8ffc39b71328da29ac773bc96ba1ea97993790ce587e4d66fe45754cdd86e00d\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T09:16:31+00:00\"\n}"
     }
   ],
   "pauses": [
@@ -403,6 +492,16 @@
         "test": 3
       },
       "resumed": "2026-11-10T06:24:39.035058+00:00"
+    },
+    {
+      "paused": {
+        "time": "2026-11-10T09:06:50.148715+00:00",
+        "host": "app",
+        "reason": "spot notice {\"action\":\"stop\",\"time\":\"2026-11-10T09:08:42Z\"}",
+        "stack": "php-laravel",
+        "test": 7
+      },
+      "resumed": "2026-11-10T09:17:01.106718+00:00"
     }
   ]
 }

@@ -272,3 +272,128 @@
 07:44:49   → ok, max_rps 2433.33
 07:44:49 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (16 rows) and scores.txt
 07:44:49 still without a test 9 result: rust-axum, go-gin, java-spring, dotnet-aspnetcore, php-laravel
+08:02:33 session 4 (run): php-laravel
+08:02:33 estimated duration: 1.3 h
+08:02:33 campaign 2026-10-17T1643Z-e1e3943: stacks ['php-laravel'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+08:02:33 php-laravel · test 2
+08:02:35   php-laravel healthy after 0.7 s
+08:02:45   smoke ok, p50 9.47 ms
+08:04:07   probe: E = 500 req/s (2 stages)
+08:05:14   step       400 req/s → pass p95   10.47 p99   13.08 err 0.00% dropped 0 
+08:06:20   step       460 req/s → pass p95   11.91 p99   15.25 err 0.00% dropped 0 
+08:07:26   step       529 req/s → pass p95   14.67 p99   18.96 err 0.00% dropped 0 
+08:08:31   step       608 req/s → pass p95   25.98 p99   56.56 err 0.00% dropped 0 db_bound
+08:09:37   step       699 req/s → fail p95  431.63 p99  464.98 err 0.00% dropped 159 slo db_bound
+08:10:43   step       654 req/s → pass p95   76.99 p99  106.14 err 0.00% dropped 0 db_bound
+08:11:49   step       676 req/s → fail p95  141.35 p99  168.99 err 0.00% dropped 0 slo db_bound
+08:12:55   step       654 req/s → pass p95   86.17 p99  118.65 err 0.00% dropped 0 db_bound
+08:13:11   → ok, max_rps 654
+08:13:11 php-laravel · test 3
+08:13:23   php-laravel healthy after 0.68 s
+08:13:34   smoke ok, p50 11.47 ms
+08:14:56   probe: E = 500 req/s (2 stages)
+08:16:01   step       400 req/s → pass p95   16.84 p99   21.67 err 0.00% dropped 0 
+08:17:07   step       460 req/s → pass p95   24.22 p99   39.08 err 0.00% dropped 0 
+08:18:13   step       529 req/s → fail p95  160.25 p99  190.34 err 0.00% dropped 0 slo db_bound
+08:19:19   step       494 req/s → pass p95   62.86 p99   92.41 err 0.00% dropped 0 
+08:20:24   step       512 req/s → fail p95  102.11 p99  135.43 err 0.00% dropped 0 slo db_bound
+08:21:30   step       494 req/s → pass p95   64.76 p99   92.84 err 0.00% dropped 0 
+08:21:47   → ok, max_rps 494
+08:21:47 php-laravel · test 4
+08:21:58   php-laravel healthy after 0.67 s
+08:22:09   smoke ok, p50 13.19 ms
+08:23:20   probe: E = 250 req/s (1 stages)
+08:24:26   step       200 req/s → pass p95   13.17 p99   14.54 err 0.00% dropped 0 
+08:25:32   step       230 req/s → pass p95   13.74 p99   15.56 err 0.00% dropped 0 
+08:26:38   step       264 req/s → pass p95   14.68 p99   17.22 err 0.00% dropped 0 
+08:27:44   step       304 req/s → pass p95   15.70 p99   19.16 err 0.00% dropped 0 
+08:28:50   step       350 req/s → pass p95   19.20 p99   25.37 err 0.00% dropped 0 
+08:29:56   step       402 req/s → pass p95   28.35 p99   40.85 err 0.00% dropped 0 
+08:31:01   step       462 req/s → fail p95  103.41 p99  133.00 err 0.00% dropped 0 slo db_bound
+08:32:07   step       432 req/s → pass p95   44.86 p99   68.72 err 0.00% dropped 0 db_bound
+08:33:13   step       447 req/s → fail p95  262.84 p99  337.65 err 0.00% dropped 40 slo db_bound
+08:34:19   step       432 req/s → pass p95   36.65 p99   57.71 err 0.00% dropped 0 db_bound
+08:34:36   → ok, max_rps 432
+08:34:36 php-laravel · test 5
+08:34:36   recreate bench from bench_template
+08:34:52   php-laravel healthy after 0.68 s
+08:35:02   smoke ok, p50 15.42 ms
+08:36:13   probe: E = 250 req/s (1 stages)
+08:37:20   step       200 req/s → pass p95   16.12 p99   17.60 err 0.00% dropped 0 
+08:38:26   step       230 req/s → pass p95   16.57 p99   18.48 err 0.00% dropped 0 
+08:39:32   step       264 req/s → pass p95   18.00 p99   21.09 err 0.00% dropped 0 
+08:40:38   step       304 req/s → pass p95   19.50 p99   24.65 err 0.00% dropped 0 
+08:41:45   step       350 req/s → pass p95   23.49 p99   29.93 err 0.00% dropped 0 
+08:42:51   step       402 req/s → pass p95   39.21 p99   58.65 err 0.00% dropped 0 db_bound
+08:43:57   step       462 req/s → fail p95  131.10 p99  179.67 err 0.00% dropped 0 slo db_bound
+08:45:03   step       432 req/s → pass p95   48.34 p99   77.66 err 0.00% dropped 0 db_bound
+08:46:09   step       447 req/s → pass p95   65.21 p99  100.35 err 0.00% dropped 0 db_bound
+08:47:15   step       447 req/s → pass p95   74.62 p99  113.05 err 0.00% dropped 0 db_bound
+08:47:32   → ok, max_rps 447
+08:47:32 php-laravel · test 6
+08:47:44   php-laravel healthy after 0.67 s
+08:47:55   smoke ok, p50 53.73 ms
+08:49:27   probe: E = 1000 req/s (3 stages)
+08:50:33   step       800 req/s → pass p95   53.75 p99   54.82 err 0.00% dropped 0 
+08:51:39   step       920 req/s → pass p95   54.10 p99   55.69 err 0.00% dropped 0 
+08:52:45   step      1058 req/s → pass p95   54.81 p99   56.75 err 0.00% dropped 0 
+08:53:51   step      1217 req/s → fail p95  582.83 p99  599.32 err 0.00% dropped 3335 (+413 at start) slo
+08:54:57   step      1138 req/s → fail p95  368.17 p99  393.34 err 0.00% dropped 197 slo
+08:56:03   step      1098 req/s → pass p95   55.18 p99   57.80 err 0.00% dropped 0 
+08:57:08   step      1098 req/s → pass p95   55.35 p99   59.34 err 0.00% dropped 0 
+08:57:25   → ok, max_rps 1098
+08:57:25 php-laravel · test 7
+08:57:37   php-laravel healthy after 0.67 s
+08:57:47   smoke ok, p50 2.36 ms
+08:59:19   probe: E = 1000 req/s (3 stages)
+09:00:25   step       800 req/s → pass p95    1.96 p99    2.41 err 0.00% dropped 0 
+09:01:31   step       920 req/s → pass p95    1.97 p99    2.68 err 0.00% dropped 0 
+09:02:37   step      1058 req/s → pass p95    2.04 p99    3.23 err 0.00% dropped 0 
+09:03:43   step      1217 req/s → pass p95    2.92 p99    4.11 err 0.00% dropped 0 
+09:04:49   step      1400 req/s → pass p95    3.60 p99    5.45 err 0.00% dropped 0 
+09:05:55   step      1610 req/s → pass p95    5.63 p99   11.16 err 0.00% dropped 0 
+09:06:49 SPOT INTERRUPTION: app: spot notice {"action":"stop","time":"2026-11-10T09:08:42Z"}
+09:06:50 PAUSED (paused_spot): app: spot notice {"action":"stop","time":"2026-11-10T09:08:42Z"} during php-laravel test 7
+09:06:50 results so far are saved. When the hosts run again: terraform apply -refresh-only, deploy.sh, then python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+09:17:01 resuming after pause (app: spot notice {"action":"stop","time":"2026-11-10T09:08:42Z"}); only php-laravel test 7 is rerun
+09:17:05 session 5 (run): php-laravel
+09:17:05 campaign 2026-10-17T1643Z-e1e3943: stacks ['php-laravel'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+09:17:05 php-laravel · test 7
+09:17:05   unfinished earlier attempt moved to php-laravel/7/discarded/20261110T091705Z
+09:17:06   php-laravel healthy after 0.69 s
+09:17:17   smoke ok, p50 2.24 ms
+09:19:00   probe: E = 2000 req/s (4 stages)
+09:20:07   step      1600 req/s → pass p95    5.32 p99    8.93 err 0.00% dropped 0 
+09:21:12   step      1840 req/s → pass p95   13.26 p99   42.48 err 0.00% dropped 0 
+09:22:19   step      2116 req/s → fail p95  554.66 p99  585.18 err 0.00% dropped 3827 (+425 at start) slo
+09:23:25   step      1978 req/s → pass p95   76.78 p99   91.37 err 0.00% dropped 0 
+09:24:32   step      2047 req/s → fail p95  521.91 p99  537.45 err 0.00% dropped 1241 (+31 at start) slo
+09:25:37   step      1978 req/s → pass p95   69.55 p99   86.98 err 0.00% dropped 0 
+09:25:54   → ok, max_rps 1978
+09:25:54 php-laravel · test 8
+09:26:06   php-laravel healthy after 0.68 s
+09:26:16   smoke ok, p50 2.71 ms
+09:28:21   probe: E = 1600 req/s (6 stages)
+09:29:26   step      1280 req/s → pass p95    5.96 p99    9.16 err 0.00% dropped 0 
+09:30:32   step      1472 req/s → pass p95    9.77 p99   34.35 err 0.00% dropped 0 
+09:31:38   step      1693 req/s → fail p95  426.60 p99  441.40 err 0.00% dropped 426 slo
+09:32:44   step      1582 req/s → pass p95   32.49 p99   63.95 err 0.00% dropped 0 
+09:33:50   step      1638 req/s → pass p95   64.40 p99   88.46 err 0.00% dropped 0 
+09:34:56   step      1638 req/s → pass p95   63.46 p99   89.80 err 0.00% dropped 0 
+09:35:13   → ok, max_rps 1638
+09:35:13 php-laravel · test 9
+09:35:13   recreate bench from bench_template
+09:35:29   php-laravel healthy after 0.68 s
+09:35:39   smoke ok, p50 11.35 ms
+09:37:03   probe: E = 500 req/s (2 stages)
+09:38:10   step       400 req/s → pass p95   54.05 p99   55.32 err 0.00% dropped 0 
+09:39:16   step       460 req/s → pass p95   54.54 p99   56.31 err 0.00% dropped 0 
+09:40:22   step       529 req/s → pass p95   55.64 p99   58.01 err 0.00% dropped 0 
+09:41:28   step       608 req/s → pass p95   57.68 p99   63.16 err 0.00% dropped 0 db_bound
+09:42:35   step       699 req/s → fail p95  306.19 p99  334.11 err 0.00% dropped 32 slo db_bound
+09:43:41   step       654 req/s → pass p95   86.73 p99  112.00 err 0.00% dropped 0 db_bound
+09:44:47   step       676 req/s → fail p95  135.81 p99  161.72 err 0.00% dropped 0 slo db_bound
+09:45:54   step       654 req/s → pass p95   80.28 p99  101.86 err 0.00% dropped 0 db_bound
+09:46:11   → ok, max_rps 655.97
+09:46:11 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (24 rows) and scores.txt
+09:46:11 still without a test 9 result: rust-axum, go-gin, java-spring, dotnet-aspnetcore
