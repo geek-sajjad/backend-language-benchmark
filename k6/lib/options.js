@@ -2,15 +2,19 @@
 import exec from 'k6/execution';
 import { MODE, RATE, SETTLE_S, SETTLE_TAIL_S, MEASURE_S, FROM_RATE, TO_RATE, DURATION_S, SLO, CHECK_BODY } from './env.js';
 
-// VUs needed ≈ rate × iteration time. Pre-allocate for 250 ms per request (the p99 SLO), allow
-// up to 500 ms. A VU started mid-step is slow to initialise and k6 drops iterations meanwhile:
-// with a 100 ms pool, a 169 ms app stall in the settle phase (Node, test 2, 22k req/s)
-// invalidated a passing step. Pre-allocating all 500 ms cost too much memory (~1 MB per VU).
+// VUs needed ≈ rate × iteration time. A VU started mid-step is slow to initialise and k6 drops
+// iterations meanwhile, so the pre-allocated pool must absorb any stall a passing app can have:
+// - 100 ms → 250 ms: a 169 ms Node stall (test 2, 22k req/s) invalidated a passing step.
+// - 250 ms → up to 1 s: a ~0.5 s .NET stall (test 4, 4.2k req/s, 2026-11-10; p99 still under the
+//   SLO) did the same twice. 1 s at every rate would cost too much memory (~1 MB per VU) and a
+//   much larger pool made k6 drop more at 40k (results/sizing/k6-split-2026-10), so the 1 s pool
+//   is capped at 2,500 VUs per k6 process (rate here is per process); the 250 ms floor stays.
 function vus(rate, requestsPerIteration) {
-  const perIteration = requestsPerIteration;
+  const perSecond = rate * requestsPerIteration;
+  const pre = Math.max(10, Math.ceil(perSecond * 0.25), Math.min(Math.ceil(perSecond * 1.0), 2500));
   return {
-    preAllocatedVUs: Math.max(10, Math.ceil(rate * perIteration * 0.25)),
-    maxVUs: Math.max(100, Math.ceil(rate * perIteration * 0.5)),
+    preAllocatedVUs: pre,
+    maxVUs: Math.max(100, pre, Math.ceil(perSecond * 1.0)),
   };
 }
 
