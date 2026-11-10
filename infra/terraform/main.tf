@@ -182,7 +182,7 @@ resource "aws_instance" "host" {
   })
 
   dynamic "instance_market_options" {
-    for_each = var.use_spot ? [1] : []
+    for_each = var.use_spot && !contains(var.on_demand_roles, each.key) ? [1] : []
     content {
       market_type = "spot"
       spot_options {

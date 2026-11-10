@@ -56,6 +56,12 @@ variable "grafana_public_view" {
   default     = true
 }
 
+variable "on_demand_roles" {
+  description = "Roles (app, db, loadgen) that run on-demand even when use_spot = true, e.g. [\"app\", \"db\"] when spot capacity for c7a.xlarge keeps stopping the app host and the on-demand vCPU quota can't fit all three. Instance types are unchanged, so the runner's hardware spec still matches."
+  type        = list(string)
+  default     = []
+}
+
 variable "use_spot" {
   description = "Run all three hosts as (persistent, stop-on-interruption) spot instances. Used for everything, including the scored campaign; the runner pauses on an interruption (docs/06). false = on-demand."
   type        = bool
