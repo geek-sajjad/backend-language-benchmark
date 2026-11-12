@@ -1,0 +1,120 @@
+{
+  "rate": 14720,
+  "verdict": "pass",
+  "reasons": [
+    "db_bound"
+  ],
+  "db_bound": true,
+  "started": 1794473366.134641,
+  "mode": "step",
+  "requests": 441513,
+  "iterations": 94970,
+  "measured_rps": 14717.1,
+  "p50_ms": 0.6399855,
+  "p95_ms": 50.79985925,
+  "p99_ms": 51.27005172,
+  "max_ms": 56.487725,
+  "error_rate": 0.0,
+  "dropped_iterations": 0,
+  "settle_tail_p99_ms": 51.2664388,
+  "checks_failed": 0,
+  "endpoints": {
+    "/secure/aggregate": {
+      "p99_ms": 0.6928815200000003,
+      "error_rate": 0.0
+    },
+    "/secure/categories/{id}/products": {
+      "p99_ms": 2.2852292999999997,
+      "error_rate": 0.0
+    },
+    "/secure/customers/{id}/orders": {
+      "p99_ms": 3.4440246,
+      "error_rate": 0.0
+    },
+    "/secure/downstream/{id}": {
+      "p99_ms": 51.6502542,
+      "error_rate": 0.0
+    },
+    "/secure/orders": {
+      "p99_ms": 8.475307099999998,
+      "error_rate": 0.0
+    },
+    "/secure/products/{id}": {
+      "p99_ms": 1.628592999999997,
+      "error_rate": 0.0
+    },
+    "/secure/transform": {
+      "p99_ms": 0.6852747000000011,
+      "error_rate": 0.0
+    }
+  },
+  "k6_processes": 3,
+  "p99_spread_ms": [
+    51.2606815,
+    51.27005172
+  ],
+  "dropped_total": 0,
+  "metrics": {
+    "app_cpu_cores": 2.210308814383458,
+    "app_rss_mb": 769.5,
+    "app_host_cpu": 0.6404310344827583,
+    "db_cpu": 0.7352586206896549,
+    "loadgen_cpu": 0.222887931034481,
+    "pg_tps": 13004.965517241379
+  },
+  "ethtool": {
+    "before": {
+      "app": {
+        "bw_in_allowance_exceeded": 585,
+        "bw_out_allowance_exceeded": 0,
+        "pps_allowance_exceeded": 0,
+        "conntrack_allowance_exceeded": 0,
+        "linklocal_allowance_exceeded": 0
+      },
+      "db": {
+        "bw_in_allowance_exceeded": 0,
+        "bw_out_allowance_exceeded": 0,
+        "pps_allowance_exceeded": 0,
+        "conntrack_allowance_exceeded": 0,
+        "linklocal_allowance_exceeded": 0
+      },
+      "loadgen": {
+        "bw_in_allowance_exceeded": 0,
+        "bw_out_allowance_exceeded": 0,
+        "pps_allowance_exceeded": 0,
+        "conntrack_allowance_exceeded": 0,
+        "linklocal_allowance_exceeded": 0
+      }
+    },
+    "after": {
+      "app": {
+        "bw_in_allowance_exceeded": 585,
+        "bw_out_allowance_exceeded": 0,
+        "pps_allowance_exceeded": 0,
+        "conntrack_allowance_exceeded": 0,
+        "linklocal_allowance_exceeded": 0
+      },
+      "db": {
+        "bw_in_allowance_exceeded": 0,
+        "bw_out_allowance_exceeded": 0,
+        "pps_allowance_exceeded": 0,
+        "conntrack_allowance_exceeded": 0,
+        "linklocal_allowance_exceeded": 0
+      },
+      "loadgen": {
+        "bw_in_allowance_exceeded": 0,
+        "bw_out_allowance_exceeded": 0,
+        "pps_allowance_exceeded": 0,
+        "conntrack_allowance_exceeded": 0,
+        "linklocal_allowance_exceeded": 0
+      }
+    }
+  },
+  "container": {
+    "Running": true,
+    "OOMKilled": false,
+    "ExitCode": 0,
+    "Status": "running"
+  },
+  "settle_unstable": false
+}

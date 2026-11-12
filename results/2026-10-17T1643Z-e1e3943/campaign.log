@@ -798,3 +798,172 @@
 16:26:14   → ok, max_rps 10287.77
 16:26:14 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (48 rows) and scores.txt
 16:26:14 still without a test 9 result: rust-axum
+07:00:58 session 9 (run): rust-axum
+07:00:58 estimated duration: 1.3 h
+07:00:58 campaign 2026-10-17T1643Z-e1e3943: stacks ['rust-axum'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+07:00:58 rust-axum · test 2
+07:00:59   rust-axum healthy after 0.02 s
+07:01:09   smoke ok, p50 0.42 ms
+07:03:38   probe: E = 32000 req/s (8 stages)
+07:04:46   step     25600 req/s → pass p95    0.57 p99    1.25 err 0.00% dropped 0 
+07:05:53   step     29440 req/s → pass p95    0.65 p99    1.47 err 0.00% dropped 0 
+07:06:59   step     33856 req/s → pass p95    0.96 p99    2.12 err 0.00% dropped 0 
+07:08:06   step     38934 req/s → pass p95    1.85 p99    7.19 err 0.00% dropped 0 db_bound
+07:09:13   step     44774 req/s → pass p95   35.42 p99   98.97 err 0.00% dropped 0 db_bound
+07:10:21   step     51490 req/s → fail p95  163.15 p99  268.63 err 0.00% dropped 0 slo db_bound
+07:11:28   step     48132 req/s → pass p95   66.24 p99  162.24 err 0.00% dropped 0 db_bound
+07:12:36   step     49811 req/s → pass p95   87.22 p99  206.69 err 0.00% dropped 0 db_bound
+07:13:43   step     49811 req/s → pass p95   79.25 p99  182.40 err 0.00% dropped 0 (+433 at start) db_bound
+07:14:00   → ok, max_rps 49811
+07:14:00 rust-axum · test 3
+07:14:01   rust-axum healthy after 0.0 s
+07:14:11   smoke ok, p50 0.81 ms
+07:16:17   probe: E = 8000 req/s (6 stages)
+07:17:24   step      6400 req/s → pass p95    1.25 p99    2.17 err 0.00% dropped 0 
+07:18:30   step      7360 req/s → pass p95    1.70 p99    3.28 err 0.00% dropped 0 db_bound
+07:19:36   step      8464 req/s → pass p95    3.35 p99    9.20 err 0.00% dropped 0 db_bound
+07:20:42   step      9734 req/s → pass p95   42.26 p99   50.93 err 0.00% dropped 0 db_bound
+07:21:50   step     11194 req/s → fail p95 1176.77 p99 1199.12 err 0.00% dropped 38538 (+8118 at start) slo db_bound
+07:22:57   step     10464 req/s → fail p95  907.59 p99  929.69 err 0.00% dropped 7042 slo db_bound
+07:24:03   step     10099 req/s → fail p95  128.68 p99  139.06 err 0.00% dropped 0 slo db_bound
+07:25:09   step      9734 req/s → fail p95  207.98 p99  231.27 err 0.00% dropped 0 slo db_bound
+07:26:15   step      9247 req/s → pass p95    4.99 p99   10.30 err 0.00% dropped 0 db_bound
+07:26:32   → ok, max_rps 9247
+07:26:32 rust-axum · test 4
+07:26:33   rust-axum healthy after 0.0 s
+07:26:44   smoke ok, p50 1.00 ms
+07:28:49   probe: E = 8000 req/s (6 stages)
+07:29:56   step      6400 req/s → pass p95    1.28 p99    2.06 err 0.00% dropped 0 
+07:31:02   step      7360 req/s → pass p95    1.59 p99    2.84 err 0.00% dropped 0 
+07:32:08   step      8464 req/s → pass p95    2.12 p99    3.86 err 0.00% dropped 0 db_bound
+07:33:15   step      9734 req/s → pass p95    9.93 p99   20.09 err 0.00% dropped 0 db_bound
+07:34:21   step     11194 req/s → pass p95   48.57 p99   58.97 err 0.00% dropped 0 db_bound
+07:35:29   step     12873 req/s → fail p95 1240.64 p99 1263.99 err 0.00% dropped 48826 (+3168 at start) slo db_bound
+07:36:35   step     12034 req/s → fail p95  832.87 p99  858.95 err 0.00% dropped 4021 slo db_bound
+07:37:42   step     11614 req/s → fail p95  681.79 p99  694.59 err 0.00% dropped 4899 (+289 at start) slo db_bound
+07:38:48   step     11194 req/s → fail p95  107.45 p99  115.15 err 0.00% dropped 0 slo db_bound
+07:39:54   step     10634 req/s → pass p95   10.86 p99   24.25 err 0.00% dropped 0 db_bound
+07:40:11   → ok, max_rps 10634
+07:40:11 rust-axum · test 5
+07:40:11   recreate bench from bench_template
+07:40:16   rust-axum healthy after 0.0 s
+07:40:27   smoke ok, p50 2.30 ms
+07:42:21   probe: E = 4000 req/s (5 stages)
+07:43:29   step      3200 req/s → pass p95    3.21 p99    4.26 err 0.00% dropped 0 
+07:44:35   step      3680 req/s → pass p95    3.89 p99    4.96 err 0.00% dropped 0 
+07:45:41   step      4232 req/s → pass p95    4.39 p99    6.37 err 0.00% dropped 0 db_bound
+07:46:48   step      4867 req/s → pass p95    5.98 p99    9.87 err 0.00% dropped 0 db_bound
+07:47:55   step      5597 req/s → pass p95   11.08 p99   19.15 err 0.00% dropped 0 db_bound
+07:49:02   step      6437 req/s → pass p95   94.43 p99  116.77 err 0.00% dropped 0 db_bound
+07:50:11   step      7403 req/s → fail p95 1206.54 p99 1255.60 err 0.00% dropped 21864 (+3303 at start) slo db_bound
+07:51:21   step      6920 req/s → fail p95 1090.29 p99 1133.18 err 0.00% dropped 5038 slo db_bound
+07:52:28   step      6678 req/s → fail p95  121.57 p99  158.58 err 0.00% dropped 0 slo db_bound
+07:53:36   step      6437 req/s → fail p95  316.15 p99  345.50 err 0.00% dropped 0 slo db_bound
+07:54:44   step      6115 req/s → pass p95   36.63 p99   68.63 err 0.00% dropped 0 db_bound
+07:55:03   → ok, max_rps 6115
+07:55:03 rust-axum · test 6
+07:55:04   rust-axum healthy after 0.5 s
+07:55:15   smoke ok, p50 51.13 ms
+07:57:44   probe: E = 32000 req/s (8 stages)
+07:58:50   step     25600 req/s → pass p95   51.30 p99   54.24 err 0.00% dropped 0 
+07:59:57   step     29440 req/s → fail p95   54.44 p99  574.54 err 0.00% dropped 2345 slo
+08:01:04   step     27520 req/s → pass p95   51.25 p99   52.45 err 0.00% dropped 0 
+08:02:10   step     28480 req/s → pass p95   51.30 p99   53.12 err 0.00% dropped 0 
+08:03:17   step     28480 req/s → pass p95   51.25 p99   52.33 err 0.00% dropped 0 (+2311 at start) 
+08:03:34   → ok, max_rps 28480
+08:03:34 rust-axum · test 7
+08:03:35   rust-axum healthy after 0.0 s
+08:03:45   smoke ok, p50 0.28 ms
+08:06:14   probe: E = 32000 req/s (8 stages)
+08:07:21   step     25600 req/s → pass p95    0.48 p99    1.93 err 0.00% dropped 0 
+08:08:27   step     29440 req/s → pass p95    0.75 p99    2.56 err 0.00% dropped 0 
+08:09:34   step     33856 req/s → pass p95    1.52 p99    3.87 err 0.00% dropped 0 
+08:10:41   step     38934 req/s → pass p95    7.30 p99   28.75 err 0.00% dropped 0 (+231 at start) 
+08:11:50 INVALID: rust-axum test 7: loadgen_cpu 78% >= 70%
+08:11:50 fix the cause, then: python3 runner/bench.py resume 2026-10-17T1643Z-e1e3943
+08:18:10 campaign 2026-10-17T1643Z-e1e3943: stacks ['rust-axum'], tests [2, 3, 4, 5, 6, 7, 8, 9]
+08:18:10 rust-axum · test 7
+08:18:10   unfinished earlier attempt moved to rust-axum/7/discarded/20261112T081810Z
+08:18:11   rust-axum healthy after 0.02 s
+08:18:21   smoke ok, p50 0.28 ms
+08:20:50   probe: E = 32000 req/s (8 stages)
+08:21:57   step     25600 req/s → pass p95    0.56 p99    2.27 err 0.00% dropped 0 
+08:23:04   step     29440 req/s → pass p95    0.80 p99    2.72 err 0.00% dropped 0 
+08:24:10   step     33856 req/s → pass p95    1.60 p99    4.23 err 0.00% dropped 0 
+08:25:18   step     38934 req/s → pass p95    8.47 p99   36.47 err 0.00% dropped 0 (+206 at start) 
+08:26:25   step     44774 req/s → loadgen_bound p95  910.30 p99  931.06 err 0.00% dropped 5425 (+1358 at start) loadgen_bound
+08:27:32   step     41854 req/s → pass p95   15.27 p99  132.27 err 0.00% dropped 0 (+95 at start) 
+08:28:40   step     43314 req/s → loadgen_bound p95  125.81 p99  229.36 err 0.00% dropped 0 (+1550 at start) loadgen_bound
+08:29:47   step     41854 req/s → pass p95   37.68 p99  173.60 err 0.00% dropped 0 
+08:30:03   → ok, max_rps 41854
+08:30:03 rust-axum · test 8
+08:30:04   rust-axum healthy after 0.0 s
+08:30:15   smoke ok, p50 0.33 ms
+08:32:52   probe: E = 12800 req/s (9 stages)
+08:33:58   step     10240 req/s → pass p95    0.39 p99    0.45 err 0.00% dropped 0 
+08:35:04   step     11776 req/s → pass p95    0.39 p99    0.51 err 0.00% dropped 0 
+08:36:11   step     13542 req/s → pass p95    0.40 p99    0.67 err 0.00% dropped 0 
+08:37:17   step     15573 req/s → pass p95    0.43 p99    1.18 err 0.00% dropped 0 
+08:38:24   step     17909 req/s → pass p95    0.55 p99    1.68 err 0.00% dropped 0 
+08:39:30   step     20595 req/s → pass p95    1.76 p99    6.98 err 0.00% dropped 0 
+08:40:37   step     23684 req/s → pass p95   33.07 p99   53.17 err 0.00% dropped 0 
+08:41:45   step     27237 req/s → fail p95 2043.62 p99 2087.14 err 0.00% dropped 73954 (+15932 at start) slo
+08:42:53   step     25460 req/s → fail p95 1396.38 p99 1475.87 err 0.00% dropped 13968 (+1611 at start) slo
+08:44:00   step     24572 req/s → fail p95  915.81 p99  964.38 err 0.00% dropped 1246 slo
+08:45:07   step     23684 req/s → pass p95   20.82 p99   51.39 err 0.00% dropped 0 
+08:45:24   → ok, max_rps 23684
+08:45:24 rust-axum · test 9
+08:45:24   recreate bench from bench_template
+08:45:30   rust-axum healthy after 0.0 s
+08:45:41   smoke ok, p50 0.45 ms
+08:48:01   probe: E = 16000 req/s (7 stages)
+08:49:08   step     12800 req/s → pass p95   50.81 p99   51.27 err 0.00% dropped 0 
+08:50:16   step     14720 req/s → pass p95   50.80 p99   51.27 err 0.00% dropped 0 db_bound
+08:51:23   step     16928 req/s → pass p95   50.78 p99   51.27 err 0.00% dropped 0 db_bound
+08:52:30   step     19467 req/s → pass p95   50.81 p99   51.33 err 0.00% dropped 0 db_bound
+08:53:37   step     22387 req/s → pass p95   50.98 p99   52.78 err 0.00% dropped 0 db_bound
+08:54:49   step     25745 req/s → fail p95 1745.08 p99 2225.07 err 0.00% dropped 12355 (+422 at start) slo db_bound
+08:55:58   step     24066 req/s → fail p95 1028.01 p99 1354.70 err 0.00% dropped 1869 slo db_bound
+08:57:06   step     23226 req/s → fail p95  439.54 p99  599.13 err 0.00% dropped 0 slo db_bound
+08:58:13   step     22387 req/s → pass p95   51.81 p99   89.07 err 0.00% dropped 0 db_bound
+08:58:30   → ok, max_rps 22389.93
+08:58:30 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (56 rows) and scores.txt
+08:58:30 every stack has a test 9 result: python3 runner/bench.py common-load 2026-10-17T1643Z-e1e3943
+08:58:39 session 10 (common-load): node-nestjs, python-fastapi, php-laravel, java-spring, go-gin, dotnet-aspnetcore, rust-axum
+08:58:39 common load: L_common = 524.8 req/s for 120 s
+08:58:39 go-gin · common load
+08:58:39   recreate bench from bench_template
+08:58:44   go-gin healthy after 0.02 s
+08:58:55   smoke ok, p50 0.48 ms
+09:02:02   p99 51.37 ms, peak memory 27.5 MB (cgroup_anon_shmem)
+09:02:02 dotnet-aspnetcore · common load
+09:02:02   recreate bench from bench_template
+09:02:09   dotnet-aspnetcore healthy after 2.08 s
+09:02:20   smoke ok, p50 1.47 ms
+09:05:26   p99 51.41 ms, peak memory 131.9 MB (cgroup_anon_shmem)
+09:05:26 node-nestjs · common load
+09:05:26   recreate bench from bench_template
+09:05:34   node-nestjs healthy after 1.7 s
+09:05:44   smoke ok, p50 1.36 ms
+09:08:51   p99 51.72 ms, peak memory 1079.4 MB (cgroup_anon_shmem)
+09:08:51 rust-axum · common load
+09:08:51   recreate bench from bench_template
+09:08:56   rust-axum healthy after 0.0 s
+09:09:07   smoke ok, p50 0.44 ms
+09:12:13   p99 51.33 ms, peak memory 29.1 MB (cgroup_anon_shmem)
+09:12:13 java-spring · common load
+09:12:13   recreate bench from bench_template
+09:12:23   java-spring healthy after 4.2 s
+09:12:33   smoke ok, p50 2.72 ms
+09:15:40   p99 51.67 ms, peak memory 526.4 MB (cgroup_anon_shmem)
+09:15:40 python-fastapi · common load
+09:15:40   recreate bench from bench_template
+09:15:49   python-fastapi healthy after 2.72 s
+09:15:59   smoke ok, p50 1.93 ms
+09:19:06   p99 53.26 ms, peak memory 381.3 MB (cgroup_anon_shmem)
+09:19:06 php-laravel · common load
+09:19:06   recreate bench from bench_template
+09:19:13   php-laravel healthy after 1.25 s
+09:19:23   smoke ok, p50 11.79 ms
+09:22:31   p99 58.59 ms, peak memory 333.0 MB (cgroup_anon_shmem)
+09:22:31 wrote /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/results.csv (56 rows) and scores.txt

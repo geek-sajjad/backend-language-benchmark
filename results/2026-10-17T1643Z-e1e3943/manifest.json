@@ -12,7 +12,8 @@
     "php-laravel",
     "java-spring",
     "go-gin",
-    "dotnet-aspnetcore"
+    "dotnet-aspnetcore",
+    "rust-axum"
   ],
   "tests": [
     2,
@@ -617,6 +618,100 @@
         }
       },
       "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"d1d247772baa8a529a6c800992678a5a0aa1e777\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"dotnet-aspnetcore\": {\n      \"build_s\": 20,\n      \"built_at\": \"2026-11-10T14:08:30+00:00\",\n      \"compose\": \"stacks/dotnet-aspnetcore/compose.yml\",\n      \"created\": \"2026-11-10T14:08:28.327582509Z\",\n      \"images\": {\n        \"bench-dotnet-aspnetcore:local\": \"sha256:44e3cfc72e849f2dff0ed33c7cd591390b818cafaef527a24094be8fb1136e61\"\n      }\n    },\n    \"go-gin\": {\n      \"build_s\": 43,\n      \"built_at\": \"2026-11-10T11:44:48+00:00\",\n      \"compose\": \"stacks/go-gin/compose.yml\",\n      \"created\": \"2026-11-10T11:44:46.245907716Z\",\n      \"images\": {\n        \"bench-go-gin:local\": \"sha256:5889759725e856ffc0c4545d2a6c2845f53e2f894f35e7dad1a9669f5d92d3d0\"\n      }\n    },\n    \"java-spring\": {\n      \"build_s\": 23,\n      \"built_at\": \"2026-11-10T09:59:18+00:00\",\n      \"compose\": \"stacks/java-spring/compose.yml\",\n      \"created\": \"2026-11-10T09:59:15.732047425Z\",\n      \"images\": {\n        \"bench-java-spring:local\": \"sha256:9cf8be862f6e627a16afd6d9e59bcea87bb3cdd3546083eda21fa712c9a8eed0\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-10T14:08:30+00:00\"\n}"
+    },
+    {
+      "n": 9,
+      "kind": "run",
+      "started": "2026-11-12T07:00:58.404790+00:00",
+      "stacks": [
+        "rust-axum"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-04b7f6a8ece13387c",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "c40b6e4d-79a7-46e8-9b2f-8d8d91af4eee"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-06e8c14ce30d26fe1",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "909ea5e7-ac40-410e-ba36-dfa7f2263878"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-06bffb231148c5a6c",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "f2aa8728-7db9-4962-b5f1-58dacf7b23b0"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"581949b1d5d5875bb30f044f34de2b1cebb0ead1\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"dotnet-aspnetcore\": {\n      \"build_s\": 19,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/dotnet-aspnetcore/compose.yml\",\n      \"created\": \"2026-11-12T06:56:56.463596192Z\",\n      \"images\": {\n        \"bench-dotnet-aspnetcore:local\": \"sha256:e7f709809a9856e84b19b445b3246e08325c0cd72994dd45148a4cf51b4f5192\"\n      }\n    },\n    \"go-gin\": {\n      \"build_s\": 43,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/go-gin/compose.yml\",\n      \"created\": \"2026-11-12T06:57:39.14119032Z\",\n      \"images\": {\n        \"bench-go-gin:local\": \"sha256:fedc00e48aae3a8a4b1793e4d73a18b6ca3fe0d112ab4c50eaca5cc346f296ec\"\n      }\n    },\n    \"java-spring\": {\n      \"build_s\": 21,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/java-spring/compose.yml\",\n      \"created\": \"2026-11-12T06:57:59.884745946Z\",\n      \"images\": {\n        \"bench-java-spring:local\": \"sha256:8d0f073dc04788777ef244080fe5ad61724692e5da6098690472a29cb5dad52c\"\n      }\n    },\n    \"node-nestjs\": {\n      \"build_s\": 18,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/node-nestjs/compose.yml\",\n      \"created\": \"2026-11-12T06:58:16.727026649Z\",\n      \"images\": {\n        \"bench-node-nestjs:local\": \"sha256:4b0ffe233151cef0ff57bbde1c6d123fd87cace9315c312d57cd1e456da5c0df\"\n      }\n    },\n    \"php-laravel\": {\n      \"build_s\": 34,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/php-laravel/compose.yml\",\n      \"created\": \"2026-11-12T06:58:50.021433208Z\",\n      \"images\": {\n        \"bench-php-laravel:local\": \"sha256:26d13b4a65a96a648fe0d957500c3935b1b8051d076bf1569c5c913a96dffee5\"\n      }\n    },\n    \"python-fastapi\": {\n      \"build_s\": 12,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/python-fastapi/compose.yml\",\n      \"created\": \"2026-11-12T06:59:02.603439084Z\",\n      \"images\": {\n        \"bench-python-fastapi:local\": \"sha256:1a56dc050823341a20613f722dd2da331571cd6609225b3768762c95ebd0a07a\"\n      }\n    },\n    \"rust-axum\": {\n      \"build_s\": 76,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/rust-axum/compose.yml\",\n      \"created\": \"2026-11-12T07:00:22.197648517Z\",\n      \"images\": {\n        \"bench-rust-axum:local\": \"sha256:cb998d40d2bef49b612251b0a581c03d8a26ae4701a6bf769e79f87e08b59cc0\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-12T07:00:23+00:00\"\n}"
+    },
+    {
+      "n": 10,
+      "kind": "common-load",
+      "started": "2026-11-12T08:58:39.489531+00:00",
+      "stacks": [
+        "node-nestjs",
+        "python-fastapi",
+        "php-laravel",
+        "java-spring",
+        "go-gin",
+        "dotnet-aspnetcore",
+        "rust-axum"
+      ],
+      "hosts": {
+        "app": {
+          "private_ip": "10.42.0.10",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-04b7f6a8ece13387c",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "c40b6e4d-79a7-46e8-9b2f-8d8d91af4eee"
+        },
+        "db": {
+          "private_ip": "10.42.0.11",
+          "instance_type": "c7a.xlarge",
+          "instance_id": "i-06e8c14ce30d26fe1",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "4",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "909ea5e7-ac40-410e-ba36-dfa7f2263878"
+        },
+        "loadgen": {
+          "private_ip": "10.42.0.12",
+          "instance_type": "c7a.4xlarge",
+          "instance_id": "i-06bffb231148c5a6c",
+          "ami": "ami-0fd9576cca965bd19",
+          "cpu_model": "AMD EPYC 9R14",
+          "cores": "16",
+          "kernel": "7.0.0-1014-aws",
+          "docker": "29.9.1",
+          "boot_id": "f2aa8728-7db9-4962-b5f1-58dacf7b23b0"
+        }
+      },
+      "image_digests": "{\n  \"arch\": \"x86_64\",\n  \"docker_version\": \"29.9.1\",\n  \"git_commit\": \"581949b1d5d5875bb30f044f34de2b1cebb0ead1\",\n  \"git_dirty\": true,\n  \"host\": \"bench-app\",\n  \"stacks\": {\n    \"dotnet-aspnetcore\": {\n      \"build_s\": 19,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/dotnet-aspnetcore/compose.yml\",\n      \"created\": \"2026-11-12T06:56:56.463596192Z\",\n      \"images\": {\n        \"bench-dotnet-aspnetcore:local\": \"sha256:e7f709809a9856e84b19b445b3246e08325c0cd72994dd45148a4cf51b4f5192\"\n      }\n    },\n    \"go-gin\": {\n      \"build_s\": 43,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/go-gin/compose.yml\",\n      \"created\": \"2026-11-12T06:57:39.14119032Z\",\n      \"images\": {\n        \"bench-go-gin:local\": \"sha256:fedc00e48aae3a8a4b1793e4d73a18b6ca3fe0d112ab4c50eaca5cc346f296ec\"\n      }\n    },\n    \"java-spring\": {\n      \"build_s\": 21,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/java-spring/compose.yml\",\n      \"created\": \"2026-11-12T06:57:59.884745946Z\",\n      \"images\": {\n        \"bench-java-spring:local\": \"sha256:8d0f073dc04788777ef244080fe5ad61724692e5da6098690472a29cb5dad52c\"\n      }\n    },\n    \"node-nestjs\": {\n      \"build_s\": 18,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/node-nestjs/compose.yml\",\n      \"created\": \"2026-11-12T06:58:16.727026649Z\",\n      \"images\": {\n        \"bench-node-nestjs:local\": \"sha256:4b0ffe233151cef0ff57bbde1c6d123fd87cace9315c312d57cd1e456da5c0df\"\n      }\n    },\n    \"php-laravel\": {\n      \"build_s\": 34,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/php-laravel/compose.yml\",\n      \"created\": \"2026-11-12T06:58:50.021433208Z\",\n      \"images\": {\n        \"bench-php-laravel:local\": \"sha256:26d13b4a65a96a648fe0d957500c3935b1b8051d076bf1569c5c913a96dffee5\"\n      }\n    },\n    \"python-fastapi\": {\n      \"build_s\": 12,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/python-fastapi/compose.yml\",\n      \"created\": \"2026-11-12T06:59:02.603439084Z\",\n      \"images\": {\n        \"bench-python-fastapi:local\": \"sha256:1a56dc050823341a20613f722dd2da331571cd6609225b3768762c95ebd0a07a\"\n      }\n    },\n    \"rust-axum\": {\n      \"build_s\": 76,\n      \"built_at\": \"2026-11-12T07:00:22+00:00\",\n      \"compose\": \"stacks/rust-axum/compose.yml\",\n      \"created\": \"2026-11-12T07:00:22.197648517Z\",\n      \"images\": {\n        \"bench-rust-axum:local\": \"sha256:cb998d40d2bef49b612251b0a581c03d8a26ae4701a6bf769e79f87e08b59cc0\"\n      }\n    }\n  },\n  \"updated_at\": \"2026-11-12T07:00:23+00:00\"\n}"
     }
   ],
   "pauses": [

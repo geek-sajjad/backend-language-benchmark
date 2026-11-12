@@ -1,10 +1,11 @@
 config: /home/ubuntu/bench/results/2026-10-17T1643Z-e1e3943/bench.toml
 stack           language   overall compos.   mixed latency  memory database concurre      cpu  failed tests
-go-gin          go            24.1    88.4   100.0     1.0     1.0     92.8     87.0     81.0  -
-java-spring     java          18.8    61.8    70.6     1.0     1.0     87.3      8.7     82.5  -
-dotnet-aspnetcoredotnet        18.7    61.8    69.5     1.0     1.0     54.5    100.0     62.6  -
-node-nestjs     node          17.5    55.7    63.6     1.0     1.0     66.4     39.4     46.6  -
-python-fastapi  python         6.5    13.0    16.4     1.0     1.0     17.8      2.8     14.8  -
-php-laravel     php            2.8     4.2     4.4     1.0     1.0      3.8      2.8      6.4  -
-DB-limited (Postgres stopped these at max_rps): dotnet-aspnetcore test 4, dotnet-aspnetcore test 5, go-gin test 5, java-spring test 3, java-spring test 4, java-spring test 5, node-nestjs test 3, node-nestjs test 4, node-nestjs test 5, php-laravel test 2, php-laravel test 4, php-laravel test 5, php-laravel test 9
-ties (overall within 5%): java-spring ~ dotnet-aspnetcore
+rust-axum       rust          96.0    91.1   100.0   100.0    94.5     92.7     73.1     98.2  -
+go-gin          go            80.6    81.7    66.2    99.9   100.0     86.5     87.0     70.6  -
+dotnet-aspnetcoredotnet        49.5    57.1    45.9    99.8    20.8     50.8    100.0     54.5  -
+java-spring     java          40.4    57.1    46.7    99.3     5.2     81.4      8.7     72.0  -
+node-nestjs     node          33.7    51.5    42.1    99.2     2.5     62.0     39.4     40.7  -
+python-fastapi  python        14.7    12.0    10.9    96.4     7.2     16.6      2.8     12.9  -
+php-laravel     php            6.3     3.9     2.9    87.6     8.3      3.5      2.8      5.6  -
+DB-limited (Postgres stopped these at max_rps): dotnet-aspnetcore test 4, dotnet-aspnetcore test 5, go-gin test 5, java-spring test 3, java-spring test 4, java-spring test 5, node-nestjs test 3, node-nestjs test 4, node-nestjs test 5, php-laravel test 2, php-laravel test 4, php-laravel test 5, php-laravel test 9, rust-axum test 2, rust-axum test 3, rust-axum test 4, rust-axum test 5, rust-axum test 9
+Loadgen-limited (k6 reached its CPU limit above max_rps; a lower bound): rust-axum test 7

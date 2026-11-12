@@ -1,0 +1,512 @@
+{
+  "stack": "rust-axum",
+  "test": 4,
+  "attempt": 1,
+  "startup_s": 0.0,
+  "estimate": 8000.0,
+  "probe": [
+    {
+      "rate": 500,
+      "ok": true,
+      "p95_ms": 0.801237,
+      "p99_ms": 0.890267,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 1000.0,
+      "ok": true,
+      "p95_ms": 0.86326145,
+      "p99_ms": 0.9258273099999998,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 2000.0,
+      "ok": true,
+      "p95_ms": 0.867177,
+      "p99_ms": 0.9241223699999996,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 4000.0,
+      "ok": true,
+      "p95_ms": 0.9049581499999999,
+      "p99_ms": 1.0375034000000007,
+      "error_rate": 0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 8000.0,
+      "ok": true,
+      "p95_ms": 1.5334720000000006,
+      "p99_ms": 2.4190424000000093,
+      "error_rate": 0.0,
+      "dropped_iterations": 0
+    },
+    {
+      "rate": 16000.0,
+      "ok": false,
+      "p95_ms": 1394.064155,
+      "p99_ms": 1396.3298365,
+      "error_rate": 0.0,
+      "dropped_iterations": 32520
+    }
+  ],
+  "probe_recovery": {
+    "recovery_s": 16.3,
+    "recovery_restart": false
+  },
+  "steps": [
+    {
+      "rate": 6400,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794468546.1783345,
+      "mode": "step",
+      "requests": 192004,
+      "iterations": 192004,
+      "measured_rps": 6400.13,
+      "p50_ms": 0.856627,
+      "p95_ms": 1.2828820499999996,
+      "p99_ms": 2.0645471000000004,
+      "max_ms": 9.358559,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 1.59532402,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        2.0381871000000005,
+        2.0645471000000004
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.1022395676661347,
+        "app_rss_mb": 706.1,
+        "app_host_cpu": 0.3639655172413796,
+        "db_cpu": 0.622586206896552,
+        "loadgen_cpu": 0.08112068965517072,
+        "pg_tps": 12389.931034482759
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 7360,
+      "verdict": "pass",
+      "reasons": [],
+      "db_bound": false,
+      "started": 1794468612.530323,
+      "mode": "step",
+      "requests": 220809,
+      "iterations": 220809,
+      "measured_rps": 7360.3,
+      "p50_ms": 0.917388,
+      "p95_ms": 1.5944008999999992,
+      "p99_ms": 2.8445154999999938,
+      "max_ms": 18.196833,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 2.175539109999992,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        2.8384621999999977,
+        2.8445154999999938
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.2575807426159744,
+        "app_rss_mb": 374.4,
+        "app_host_cpu": 0.40474137931034515,
+        "db_cpu": 0.6942241379310343,
+        "loadgen_cpu": 0.09028017241379083,
+        "pg_tps": 14751.689655172413
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 16.3,
+      "recovery_restart": false
+    },
+    {
+      "rate": 8464,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794468679.089536,
+      "mode": "step",
+      "requests": 253927,
+      "iterations": 253927,
+      "measured_rps": 8464.23,
+      "p50_ms": 1.039079,
+      "p95_ms": 2.120568,
+      "p99_ms": 3.858459500000005,
+      "max_ms": 22.708899,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 4.5168623,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        3.7709179999999938,
+        3.858459500000005
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.4580291391494153,
+        "app_rss_mb": 322.4,
+        "app_host_cpu": 0.4609482758620711,
+        "db_cpu": 0.7888793103448275,
+        "loadgen_cpu": 0.1048275862068958,
+        "pg_tps": 16375.413793103447
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 9734,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794468745.442329,
+      "mode": "step",
+      "requests": 292033,
+      "iterations": 292033,
+      "measured_rps": 9734.43,
+      "p50_ms": 1.608593,
+      "p95_ms": 9.927731999999983,
+      "p99_ms": 20.08866115999993,
+      "max_ms": 40.131053,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 7.818808929999984,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        20.057146500000023,
+        20.08866115999993
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.6731206287575984,
+        "app_rss_mb": 308.5,
+        "app_host_cpu": 0.5127586206896553,
+        "db_cpu": 0.8809482758620695,
+        "loadgen_cpu": 0.11566810344827705,
+        "pg_tps": 19501.1724137931
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 11194,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794468811.887584,
+      "mode": "step",
+      "requests": 335828,
+      "iterations": 335828,
+      "measured_rps": 11194.27,
+      "p50_ms": 3.714551,
+      "p95_ms": 48.566226399999984,
+      "p99_ms": 58.97257668000001,
+      "max_ms": 82.205845,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 68.1372832,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        58.9259032,
+        58.97257668000001
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.9818758504846308,
+        "app_rss_mb": 290.6,
+        "app_host_cpu": 0.5931896551724114,
+        "db_cpu": 0.9733620689655199,
+        "loadgen_cpu": 0.1331896551724132,
+        "pg_tps": 21679.103448275862
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": false,
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 12873,
+      "verdict": "fail",
+      "reasons": [
+        "slo",
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794468878.2426052,
+      "mode": "step",
+      "requests": 339413,
+      "iterations": 339413,
+      "measured_rps": 11313.77,
+      "p50_ms": 1123.541049,
+      "p95_ms": 1240.6436294999999,
+      "p99_ms": 1263.99182552,
+      "max_ms": 1274.57782,
+      "error_rate": 0.0,
+      "dropped_iterations": 48826,
+      "settle_tail_p99_ms": 960.8328402,
+      "checks_failed": 0,
+      "k6_processes": 3,
+      "p99_spread_ms": [
+        1263.893549,
+        1263.99182552
+      ],
+      "dropped_total": 51994,
+      "metrics": {
+        "app_cpu_cores": 2.087371082751312,
+        "app_rss_mb": 639.4,
+        "app_host_cpu": 0.6269827586206899,
+        "db_cpu": 0.9798275862068972,
+        "loadgen_cpu": 0.1488793103448275,
+        "pg_tps": 21788.48275862069
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 12034,
+      "verdict": "fail",
+      "reasons": [
+        "slo",
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794468945.5381434,
+      "mode": "step",
+      "requests": 357008,
+      "iterations": 357008,
+      "measured_rps": 11900.27,
+      "p50_ms": 637.073359,
+      "p95_ms": 832.8731938000001,
+      "p99_ms": 858.95487,
+      "max_ms": 871.261907,
+      "error_rate": 0.0,
+      "dropped_iterations": 4021,
+      "settle_tail_p99_ms": 325.21317644,
+      "checks_failed": 0,
+      "k6_processes": 3,
+      "p99_spread_ms": [
+        858.7951504,
+        858.95487
+      ],
+      "dropped_total": 4021,
+      "metrics": {
+        "app_cpu_cores": 2.2245650995215427,
+        "app_rss_mb": 543.4,
+        "app_host_cpu": 0.6510344827586225,
+        "db_cpu": 0.9977586206896573,
+        "loadgen_cpu": 0.16191810344827617,
+        "pg_tps": 23520.62068965517
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 11614,
+      "verdict": "fail",
+      "reasons": [
+        "slo",
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794469012.2822287,
+      "mode": "step",
+      "requests": 346752,
+      "iterations": 346752,
+      "measured_rps": 11558.4,
+      "p50_ms": 583.7517115,
+      "p95_ms": 681.794404,
+      "p99_ms": 694.59240216,
+      "max_ms": 711.852267,
+      "error_rate": 0.0,
+      "dropped_iterations": 4899,
+      "settle_tail_p99_ms": 643.87395763,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        694.57032814,
+        694.59240216
+      ],
+      "dropped_total": 5188,
+      "metrics": {
+        "app_cpu_cores": 2.2070295952169925,
+        "app_rss_mb": 487.9,
+        "app_host_cpu": 0.6412931034482747,
+        "db_cpu": 0.9966379310344838,
+        "loadgen_cpu": 0.14885775862068806,
+        "pg_tps": 23166.48275862069
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.1,
+      "recovery_restart": false
+    },
+    {
+      "rate": 11194,
+      "verdict": "fail",
+      "reasons": [
+        "slo",
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794469079.1195564,
+      "mode": "step",
+      "requests": 335828,
+      "iterations": 335828,
+      "measured_rps": 11194.27,
+      "p50_ms": 4.5961335,
+      "p95_ms": 107.4481255,
+      "p99_ms": 115.15056,
+      "max_ms": 130.512694,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 18.046053150000027,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        115.13070824999997,
+        115.15056
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.968771261578416,
+        "app_rss_mb": 467.3,
+        "app_host_cpu": 0.5982758620689663,
+        "db_cpu": 0.9819827586206904,
+        "loadgen_cpu": 0.1349137931034481,
+        "pg_tps": 21592.55172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "recovery_s": 16.1,
+      "recovery_restart": false,
+      "confirmation": true
+    },
+    {
+      "rate": 10634,
+      "verdict": "pass",
+      "reasons": [
+        "db_bound"
+      ],
+      "db_bound": true,
+      "started": 1794469145.2657785,
+      "mode": "step",
+      "requests": 319025,
+      "iterations": 319025,
+      "measured_rps": 10634.17,
+      "p50_ms": 2.012517,
+      "p95_ms": 10.858536999999988,
+      "p99_ms": 24.25094119999992,
+      "max_ms": 42.875868,
+      "error_rate": 0.0,
+      "dropped_iterations": 0,
+      "settle_tail_p99_ms": 7.860465650000004,
+      "checks_failed": 0,
+      "k6_processes": 2,
+      "p99_spread_ms": [
+        24.242132400000056,
+        24.25094119999992
+      ],
+      "dropped_total": 0,
+      "metrics": {
+        "app_cpu_cores": 1.8522020180572216,
+        "app_rss_mb": 341.0,
+        "app_host_cpu": 0.5684482758620695,
+        "db_cpu": 0.9496551724137938,
+        "loadgen_cpu": 0.125258620689654,
+        "pg_tps": 20562.655172413793
+      },
+      "container": {
+        "Running": true,
+        "OOMKilled": false,
+        "ExitCode": 0,
+        "Status": "running"
+      },
+      "settle_unstable": true,
+      "recovery_s": 16.1,
+      "recovery_restart": false,
+      "confirmation": true
+    }
+  ],
+  "converged": true,
+  "confirmed": true,
+  "events": [],
+  "image": "sha256:cb998d40d2bef49b612251b0a581c03d8a26ae4701a6bf769e79f87e08b59cc0",
+  "peak_rss_search_mb": 706.1,
+  "status": "ok",
+  "max_rps": 10634,
+  "best_step": 10634,
+  "db_bound": true,
+  "settle_unstable": true,
+  "db_bound_steps": 8
+}
