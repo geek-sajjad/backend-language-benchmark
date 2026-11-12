@@ -50,6 +50,7 @@ def main(path, config_path=None):
     p99, rss = {}, {}       # stack -> test 9 value, or None if failed
     language = {}
     db_bound = set()        # (stack, test) whose max_rps was limited by Postgres: reported, scored as measured
+    loadgen_bound = set()   # (stack, test) capped by the load generator: a lower bound, scored as measured
     for r in csv.DictReader(open(path)):
         stack, test = r["stack"], int(r["test"])
         language[stack] = r["language"]
@@ -59,6 +60,8 @@ def main(path, config_path=None):
         results[(stack, test)] = float(r["max_rps"]) if ok else None
         if ok and r.get("db_bound") == "1":
             db_bound.add((stack, test))
+        if ok and r.get("loadgen_bound") == "1":
+            loadgen_bound.add((stack, test))
         if test == MIXED_TEST:
             # empty until the common-load session (session 8) has run
             p99[stack] = float(r["p99_common_ms"]) if ok and r["p99_common_ms"] else None
@@ -97,6 +100,9 @@ def main(path, config_path=None):
     if db_bound:
         print("DB-limited (Postgres stopped these at max_rps): "
               + ", ".join(f"{s} test {t}" for s, t in sorted(db_bound)))
+    if loadgen_bound:
+        print("Loadgen-limited (k6 reached its CPU limit above max_rps; a lower bound): "
+              + ", ".join(f"{s} test {t}" for s, t in sorted(loadgen_bound)))
 
     ranked = sorted(rows, reverse=True)
     ties = [f"{a[1]} ~ {b[1]}" for a, b in zip(ranked, ranked[1:]) if (a[0] - b[0]) / a[0] < TIE_THRESHOLD]

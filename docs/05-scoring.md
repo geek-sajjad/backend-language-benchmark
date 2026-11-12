@@ -232,14 +232,14 @@ Overall = exp( (0.35·ln 80 + 0.35·ln 96.9 + 0.15·ln 90 + 0.15·ln 50) / 1.0 )
 ## Input format (`results.csv`)
 
 ```
-stack,language,test,max_rps,status,p99_common_ms,peak_rss_mb,db_bound
-gin,go,2,61200,ok,,,0
-gin,go,3,7100,ok,,,1
-gin,go,9,30150,ok,41.2,118,0
-laravel,php,6,,slo_fail,,,0
+stack,language,test,max_rps,status,p99_common_ms,peak_rss_mb,db_bound,loadgen_bound
+gin,go,2,61200,ok,,,0,0
+gin,go,3,7100,ok,,,1,0
+gin,go,9,30150,ok,41.2,118,0,0
+laravel,php,6,,slo_fail,,,0,0
 ```
 
-`p99_common_ms` and `peak_rss_mb` are only filled for test 9 rows. `db_bound = 1` marks a result whose final passing step had db CPU ≥ 70%: it is scored as measured and listed as DB-limited (column optional; older files without it still score). The runner writes this file. A tiny sample is in `scoring/example-results.csv`.
+`p99_common_ms` and `peak_rss_mb` are only filled for test 9 rows. `db_bound = 1` marks a result whose final passing step had db CPU ≥ 70%: it is scored as measured and listed as DB-limited (column optional; older files without it still score). `loadgen_bound = 1` marks a result capped by a step where the loadgen reached 70% CPU: `max_rps` is a lower bound, scored as measured and listed as loadgen-limited ([04](04-methodology.md#when-the-loadgen-is-the-bottleneck)); also optional. The runner writes this file. A tiny sample is in `scoring/example-results.csv`.
 
 ---
 

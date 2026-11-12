@@ -4,7 +4,8 @@
 Usage: python3 scoring/charts.py results/<campaign-id> [--out DIR]
 
 One horizontal bar chart per test (max_rps per stack, best first) → <campaign>/charts/test-<n>.png.
-DB-limited results (`db_bound`) are hatched and labelled, and tests 2-5 show the calibrated
+DB-limited results (`db_bound`) are hatched and labelled, loadgen-limited ones (`loadgen_bound`,
+a lower bound) are hatched and shown as "≥", and tests 2-5 show the calibrated
 Postgres ceiling (pgbench, `calibrate`) as a dashed line (04 "When Postgres is the bottleneck").
 Failed stacks keep their row with the failure status, so a missing bar is never mistaken for 0.
 
@@ -62,6 +63,10 @@ def chart(test, rows, ceiling, path):
             bar.set_hatch("//")
             bar.set_edgecolor("white")
             text += "  DB-limited"
+        if r.get("loadgen_bound") == "1":
+            bar.set_hatch("\\\\")
+            bar.set_edgecolor("white")
+            text = f"≥ {text}  loadgen-limited"
         ax.text(v + top * 0.01, y, text, va="center", fontsize=13, zorder=3,
                 bbox={"facecolor": "white", "edgecolor": "none", "pad": 1})
 

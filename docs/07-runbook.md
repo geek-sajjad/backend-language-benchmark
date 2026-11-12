@@ -148,7 +148,8 @@ Check the AWS console afterwards: no running instances or EBS volumes should be 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `dropped_iterations > 0` at a rate the app clearly handles | k6 out of VUs or CPU | Raise `preAllocatedVUs`/`maxVUs`; resize the loadgen to `c7a.8xlarge` |
+| `dropped_iterations > 0` at a rate the app clearly handles | k6 out of VUs or CPU | Raise `preAllocatedVUs`/`maxVUs`; resize the loadgen to `c7a.8xlarge` (between campaigns) |
+| Step verdict `loadgen_bound` | loadgen CPU ≥ 70% (heavy requests, very fast stack) | Not an error: the search continues below it and the result is reported as loadgen-limited. For a real maximum, use a bigger loadgen in the next campaign |
 | `pps_allowance_exceeded` increases | Packet rate limit on app ENI (highest-rate tests: 2, 6) | Check whether the response size is unexpectedly large; this is a hard instance limit, so document it |
 | db CPU > 70% in tests 2–5, 9 | DB ceiling reached | Expected: the step is flagged `db_bound`, not invalid. In tests 6, 7, 8 it means the downstream mock or something else on the db host is busy: investigate |
 | Errors are `connection reset` at low rate | Accept backlog or `somaxconn` too small, or container ulimit | Check sysctls; `ulimits.nofile` in compose |

@@ -146,6 +146,17 @@ class Pair:
             kind = "oom" if state.get("OOMKilled") else "crash"
             self.events.append({"event": kind, "exit_code": state.get("ExitCode")})
             return "fail", [kind]
+        # The generator at its CPU limit (04 "When the loadgen is the bottleneck"): k6 can't be
+        # trusted to send the rate or time the responses, so the step proves nothing about the
+        # app. It is not a pass and caps the search like a fail (the search bisects below it);
+        # a result capped by such a step is reported as loadgen-limited, a lower bound. Checked
+        # before dropped iterations, which a saturated k6 also causes.
+        if not self.cluster.local:
+            cpu = metrics.get("loadgen_cpu")
+            if cpu is None:
+                raise InvalidStep("loadgen_cpu missing from Prometheus")
+            if cpu >= self.validity["max_loadgen_cpu"]:
+                return "loadgen_bound", ["loadgen_bound"]
         slo_ok = self.slo_ok(n)
         if not slo_ok:
             reasons.append("slo")
@@ -159,17 +170,15 @@ class Pair:
                     for k, v in counters.items():
                         if v > eth_before.get(host, {}).get(k, 0):
                             raise InvalidStep(f"{host} {k} increased")
-            for key, limit in (("db_cpu", self.validity["max_db_cpu"]), ("loadgen_cpu", self.validity["max_loadgen_cpu"])):
-                if metrics.get(key) is None:
-                    raise InvalidStep(f"{key} missing from Prometheus")
-                if metrics[key] < limit:
-                    continue
+            key, limit = "db_cpu", self.validity["max_db_cpu"]
+            if metrics.get(key) is None:
+                raise InvalidStep(f"{key} missing from Prometheus")
+            if metrics[key] >= limit:
                 # In the DB tests Postgres may be the bottleneck: the step stays valid and is
                 # flagged, so the result can be reported as DB-limited (04 "When Postgres is the bottleneck").
-                if key == "db_cpu" and self.test in self.validity.get("db_bound_tests", []):
-                    reasons.append("db_bound")
-                    continue
-                raise InvalidStep(f"{key} {metrics[key]:.0%} >= {limit:.0%}")
+                if self.test not in self.validity.get("db_bound_tests", []):
+                    raise InvalidStep(f"{key} {metrics[key]:.0%} >= {limit:.0%}")
+                reasons.append("db_bound")
         return ("pass" if slo_ok else "fail"), reasons
 
     # ------------------------------------------------------------------ recovery
@@ -253,13 +262,19 @@ class Pair:
         result["peak_rss_search_mb"] = max(rss) if rss else None
         if best:
             # Test 9: the measured request rate; tests 2-8: the offered rate (02, 04).
+            # loadgen-limited: the lowest rate that capped the result is a loadgen_bound step, so
+            # the app may serve more; max_rps is a lower bound
+            caps = [st for st in steps if st["verdict"] != "pass" and st["rate"] > best["rate"]]
+            cap = min(caps, key=lambda st: st["rate"]) if caps else None
             result.update(status="ok", max_rps=best["measured_rps"] if self.test == MIXED_TEST else best["rate"],
-                          best_step=best["rate"], db_bound=best.get("db_bound", False))
+                          best_step=best["rate"], db_bound=best.get("db_bound", False),
+                          loadgen_bound=bool(cap and cap["verdict"] == "loadgen_bound"))
         else:
             crashes = [e["event"] for e in self.events if e["event"] in ("crash", "oom")]
             result.update(status=crashes[-1] if crashes else "slo_fail", max_rps=None)
         result["settle_unstable"] = any(st.get("settle_unstable") for st in steps)
         result["db_bound_steps"] = sum(1 for st in steps if st.get("db_bound"))
+        result["loadgen_bound_steps"] = sum(1 for st in steps if st["verdict"] == "loadgen_bound")
         atomic_write_json(self.out / f"search.a{self.attempt}.json", result)
         return result
 

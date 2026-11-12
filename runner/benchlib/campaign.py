@@ -314,7 +314,8 @@ class Campaign:
                     continue
                 row = {"stack": stack, "language": stacks.get(stack, ""), "test": test,
                        "max_rps": r["max_rps"] if r["status"] == "ok" else "", "status": r["status"],
-                       "p99_common_ms": "", "peak_rss_mb": "", "db_bound": int(bool(r.get("db_bound")))}
+                       "p99_common_ms": "", "peak_rss_mb": "", "db_bound": int(bool(r.get("db_bound"))),
+                       "loadgen_bound": int(bool(r.get("loadgen_bound")))}
                 if test == MIXED_TEST and r["status"] == "ok":
                     # A crash or OOM during the common-load run scores latency and memory as failures (09 C6).
                     if common and common["status"] == "ok":
@@ -325,7 +326,8 @@ class Campaign:
                         row["max_rps"] = ""
                 rows.append(row)
         buf = io.StringIO()
-        w = csv.DictWriter(buf, ["stack", "language", "test", "max_rps", "status", "p99_common_ms", "peak_rss_mb", "db_bound"],
+        w = csv.DictWriter(buf, ["stack", "language", "test", "max_rps", "status", "p99_common_ms", "peak_rss_mb", "db_bound",
+                                 "loadgen_bound"],
                            lineterminator="\n")
         w.writeheader()
         w.writerows(rows)

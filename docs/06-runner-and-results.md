@@ -48,7 +48,7 @@ for test in 2..9:                         # one stack per session, tests in orde
       snapshot ethtool counters again
       query Prometheus for the step window: app CPU, app RSS, db CPU, loadgen CPU, PG TPS
       docker inspect app → running? OOMKilled?
-      classify step: pass | fail | INVALID(reason); db CPU ≥ 70% in tests 2–5, 9 → flag db_bound (still valid)
+      classify step: pass | fail | loadgen_bound | INVALID(reason); db CPU ≥ 70% in tests 2–5, 9 → flag db_bound (still valid); loadgen CPU ≥ 70% → loadgen_bound (caps the search like a fail)
       INVALID → stop, alert, mark pair for rerun
       recovery check (CPU idle, probe latency, DB idle, CHECKPOINT for writes);
         not recovered in 60 s → restart container + warm-up
